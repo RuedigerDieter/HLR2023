@@ -1,19 +1,36 @@
 ﻿#include <stdio.h>
 
 // Definieren Sie ein 3x3-Array Namens map, das Werte vom Typ double enthält
-
+double map[3][3];
 
 // Die Funktion set_temperature soll an Position [x, y] den Wert dir in das Array map eintragen
 // Überprüfen Sie x und y, um mögliche Arrayüberläufe zu verhindern
 void set_temperature (int x, int y, double temperature)
 {
-
+	if(x < 0 || x > 2)
+	{
+		printf("Fehler: x=%d liegt außerhalb des Arrays\n",x);
+		return;
+	}
+	if(y < 0 || y > 2)
+	{
+		printf("Fehler: y=%d liegt außerhalb des Arrays\n",y);
+		return;
+	}
+	map[x][y] = temperature;
 }
 
 // Die Funktion show_map soll das Array in Form einer 3x3-Matrix ausgeben
 void show_map (void)
 {
-
+	for (int i = 0; i < 3; i++)
+	{
+		for (int k = 0; k < 3; k++)
+		{
+			printf("%f \t", map[i][k]);
+		}
+		printf("\n");
+	}
 }
 
 // Die Funktion average_value soll an Position [x, y] den Durchschnitt der 8 umgebenen
@@ -22,7 +39,31 @@ void show_map (void)
 // Verwenden Sie hierfür auch die Funktion set_temperature.
 void set_to_average (int x, int y)
 {
-  
+  double avg = 0;
+  for (int i = x - 1; i <= x+1; i++)
+  {
+	if (i < 0 || i > 2)
+	{
+		continue;
+	}
+	else
+	{
+		for (int k = y - 1; k <= y+1; k++)
+		{
+			if(k < 0 || k > 2)
+			{
+				continue;
+			}
+			else
+			{
+				avg += map[i][k];
+			}
+		}
+  	}
+	}
+	avg -= map[x][y];
+	avg = avg / 8;
+	set_temperature(x, y, avg);
 }
 
 // In dieser Funktion darf nichts verändert werden!
