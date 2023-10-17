@@ -25,6 +25,9 @@ void show_map (void)
 {
 	for (int i = 0; i < 3; i++)
 	{
+		/*
+		 * %f um die Float darzustellen, \t um die Tabelle zu formatieren.
+		 */
 		for (int k = 0; k < 3; k++)
 		{
 			printf("%f \t", map[i][k]);
@@ -37,6 +40,11 @@ void show_map (void)
 // Temperaturen in das Array map eintragen. 
 // Für Werte außerhalb des Arrays soll der Wert 0 angenommen werden.
 // Verwenden Sie hierfür auch die Funktion set_temperature.
+
+/*
+ * 3*3 Zellen werden addiert, für bessere Verständlichkeit wird die "Urzelle" später wieder von der Summe abgezogen, 
+ * sodass der Durchschnitt ausgerechnet und auf auf die ausgewählte Zelle geschrieben werden kann.
+ */
 void set_to_average (int x, int y)
 {
   double avg = 0;
