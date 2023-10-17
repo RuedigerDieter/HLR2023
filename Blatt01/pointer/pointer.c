@@ -57,9 +57,20 @@ void operator_precedence()
   
   // Entfernen Sie alle unnötigen und falschen Klammern, und fügen Sie fehlende Klammern hinzu.
   // Betrachten Sie hierfür den Begriff "Operator Precedence".
+  /* 
+   * zeiger_array[1] = &array[0], also die Adresse vom ersten Array-Element.
+   * => *zeiger_array[1] = 1.
+   */
   printf("Das erste Array-Element plus 1: %d.\n", *zeiger_array[1] + 1);
+  /*
+   * zeiger_array[1] + 1 = die Adresse neben dem ersten Array-Element, also 10.
+   * => *(zeiger_array[1] + 1) = 10.
+   */
   printf("Das zweite Array-Element: %d.\n", *(zeiger_array[1] + 1));
-  printf("Das dritte Array-Element plus 1: %d.\n", (*(zeiger_array[1] + 1)));
+  /* 
+   *
+   */
+  printf("Das dritte Array-Element plus 1: %d.\n", *(zeiger_array[0]) + 1);
 }
 
 int main (void)
