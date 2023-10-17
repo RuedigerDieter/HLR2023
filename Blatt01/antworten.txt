@@ -1,0 +1,7 @@
+> which cd
+'which' funktioniert in bash nicht auf 'cd', da 'cd' ein eingebautes Programm von bash ist. Daher ist es in keinem */bin/-Ordner.
+
+> Groesse Original vs. .tar vs. .tar.gz
+
+> .tar.gz aus Aufruf von 'tar'
+
