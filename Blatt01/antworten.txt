@@ -2,6 +2,12 @@
 'which' funktioniert in bash nicht auf 'cd', da 'cd' ein eingebautes Programm von bash ist. Daher ist es in keinem */bin/-Ordner.
 
 > Groesse Original vs. .tar vs. .tar.gz
+Die Originaldatei + Verzeichnis ist ca. 256 KiB groß.
+Der Tarball ist mit 260 KiB etwas größer.
+Das tgz-Archiv ist wiederum komprimierter, mit 257 KiB.
+
+Entgegen der eigentlichen Erwartung sind die eigentlich komprimierten Archive größer als das Original, eventuell aber weil urandom zu diesem Zeitpunkt sehr schwer zu komprimieren war.
 
 > .tar.gz aus Aufruf von 'tar'
 
+Mithilfe von 'tar cfvz archiv.tar.gz archiv/' bzw. 'tar -cfvz archiv.tar.gz' lässt sich direkt ein tgz erzeugen.
