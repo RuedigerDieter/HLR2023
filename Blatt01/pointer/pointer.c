@@ -68,8 +68,11 @@ void operator_precedence()
   printf("Das zweite Array-Element: %d.\n", *(zeiger_array[1] + 1));
   /* 
    * (Nach E-Mail-Korrektur geändert)
+   * (*zeiger_array) = &array[2], also die Adresse vom dritten Array-Element.
+   * mit (*zeiger_array)[1] wird das nächste Element ausgesucht, also (*zeiger_array)[1] = &array[2] + 1 = 1000.
+   * => (*zeiger_array)[1] + 1 = 1001.
    */
-  printf("Das vierte Array-Element plus 1: %d.\n", *((zeiger_array[1]) + 1));
+  printf("Das vierte Array-Element plus 1: %d.\n", (*zeiger_array)[1] + 1);
 }
 
 int main (void)
