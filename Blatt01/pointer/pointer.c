@@ -67,9 +67,9 @@ void operator_precedence()
    */
   printf("Das zweite Array-Element: %d.\n", *(zeiger_array[1] + 1));
   /* 
-   *
+   * (Nach E-Mail-Korrektur geändert)
    */
-  printf("Das dritte Array-Element plus 1: %d.\n", *zeiger_array[0] + 1);
+  printf("Das vierte Array-Element plus 1: %d.\n", *((zeiger_array[1]) + 1));
 }
 
 int main (void)
