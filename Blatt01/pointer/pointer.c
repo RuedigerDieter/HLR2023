@@ -70,7 +70,7 @@ void operator_precedence()
   /* 
    *
    */
-  printf("Das dritte Array-Element plus 1: %d.\n", *(zeiger_array[0]) + 1);
+  printf("Das dritte Array-Element plus 1: %d.\n", *zeiger_array[0] + 1);
 }
 
 int main (void)
