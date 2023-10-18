@@ -29,14 +29,13 @@ void set_value(int* zeiger, int value)
   *zeiger = value;
 }
 
-
 /* Mit & kann man die Adresse einer Variable ausgeben */
 void change_pointer(int** zeiger_zeiger)
 {
   // Setzen Sie den Zeiger, auf den der Zeiger zeigt, auf die Adresse von "globaler_wert", bzw.
   // lassen Sie den Zeiger "zeiger", der hier übergeben wurde, auf die Adresse von "globaler_wert"
   // zeigen.
-  *zeiger_zeiger = (void *) &globaler_wert;
+  *zeiger_zeiger = &globaler_wert;
 }
 
 // Man kann Arrays in Funktionsköpfe verwenden:
