@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+  
+int mistake2_ = 0;
 
 /*
  * allocated memory space at the adress before writing the array, thereby ensuring the local variable is not overwritten.
@@ -34,13 +36,12 @@ int *mistake2(void) {
 
 
 /*
- * changed "(int *)buf" to "(int *)&mistake2_" so no memory is mistakenly overriden.
+ * changed "(int *)buf" to "(int *)&mistake2_" so we can allocate memory.
 */
 int *mistake3(void) {
   /* In dieser Funktion darf kein Speicher direkt allokiert werden. */
-  int mistake2_ = 3;
-  int *buf = (int *)&mistake2_;
-  buf = 3;
+  int *buf = (int *) &mistake2_;
+  buf[0] = 3;
   return buf;
 }
 
@@ -67,8 +68,9 @@ int main(void) {
 
   /* mhh muss hier noch etwas gefreed werden? */
   /* Fügen sie hier die korrekten aufrufe von free() ein */
-  free(p[1]); /* welcher Pointer war das doch gleich?, TODO: Fixme... ;-) */
-
+  free(p[1][-1]); /* welcher Pointer war das doch gleich?, TODO: Fixme... ;-) */
+  free(p[0][-1]);
+  free(p[3]);
   
 
   return 0;
