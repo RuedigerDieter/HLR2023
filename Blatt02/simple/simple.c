@@ -32,7 +32,6 @@ int *mistake2(void) {
   return buf;
 }
 
-
 int *mistake3(void) {
   /* In dieser Funktion darf kein Speicher direkt allokiert werden. */
   int mistake2_ = 0;
