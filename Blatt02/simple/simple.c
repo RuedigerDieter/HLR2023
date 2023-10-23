@@ -6,29 +6,53 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+/*
+ * allocated memory space at the adress before writing the array, thereby ensuring the local variable is not overwritten.
+ */
 int *mistake1(void) {
-  int buf[] = {1, 1, 2, 3, 4, 5};
-  return buf;
-}
-
-int *mistake2(void) {
-  int *buf = malloc(sizeof(char) * 4);
+  int *buf = malloc(sizeof(int) * 6);
+  buf[0] = 1;
+  buf[1] = 1;
   buf[2] = 2;
+  buf[3] = 3;
+  buf[4] = 4;
+  buf[5] = 5;
   return buf;
 }
 
+
+/*
+ * changed "sizeof(char) * 4" to "sizeof(int) * 4" as chars are not big enough. buf[2] would thereby be accessing out of bounds.
+ * changed "buf[2] = 2" to "buff[1] =2".
+ */
+int *mistake2(void) {
+  int *buf = malloc(sizeof(int) * 4);
+  buf[1] = 2;
+  return buf;
+}
+
+
+/*
+ * changed "(int *)buf" to "(int *)&mistake2_" so no memory is mistakenly overriden.
+*/
 int *mistake3(void) {
   /* In dieser Funktion darf kein Speicher direkt allokiert werden. */
-  int mistake2_ = 0;
-  int *buf = (int *)&mistake2;
-  buf[0] = 3;
+  int mistake2_ = 3;
+  int *buf = (int *)&mistake2_;
+  buf = 3;
   return buf;
 }
 
+
+/*
+ * changed index writing to buf, as main() calls the first element.
+ * removed "free()"-call before accessing the array
+ */
 int *mistake4(void) {
-  int *buf = malloc(sizeof(char) * 4);
-  buf[4] = 4;
-  free(buf);
+  int *buf = malloc(sizeof(int) * 4);
+  buf[0] = 4;
+  //free(buf);
   return buf;
 }
 
@@ -44,6 +68,8 @@ int main(void) {
   /* mhh muss hier noch etwas gefreed werden? */
   /* Fügen sie hier die korrekten aufrufe von free() ein */
   free(p[1]); /* welcher Pointer war das doch gleich?, TODO: Fixme... ;-) */
+
+  
 
   return 0;
 }
