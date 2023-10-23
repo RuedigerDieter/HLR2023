@@ -7,6 +7,7 @@ Da in main() &mistake2()[1] aufgerufen wird, wird hier das falsche Element besch
 
 mistake3():
 
+
 mistake4():
 Das falsche Element von buf wird beschrieben, da nach main() das erste aufgerufen wird.
 free() wird benutzt, bevor buf noch benutzt wird, sodass auf uninitialisierten Speicher zugegriffen wird.

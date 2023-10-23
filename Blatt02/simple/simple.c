@@ -7,8 +7,6 @@
 #include <stdlib.h>
 
   
-int mistake2_ = 0;
-
 /*
  * allocated memory space at the adress before writing the array, thereby ensuring the local variable is not overwritten.
  */
@@ -35,15 +33,14 @@ int *mistake2(void) {
 }
 
 
-/*
- * changed "(int *)buf" to "(int *)&mistake2_" so we can allocate memory.
-*/
 int *mistake3(void) {
   /* In dieser Funktion darf kein Speicher direkt allokiert werden. */
-  int *buf = (int *) &mistake2_;
+  int mistake2_ = 0;
+  int *buf = (int *)&mistake2;
   buf[0] = 3;
   return buf;
 }
+
 
 
 /*
@@ -57,6 +54,11 @@ int *mistake4(void) {
   return buf;
 }
 
+/**
+ * no need to free p[3], as no malloc() happens. 
+ * 
+*/
+
 int main(void) {
   /* Modifizieren Sie diese Zeile nicht! */
   int *p[4] = {&mistake1()[1], &mistake2()[1], mistake3(), mistake4()};
@@ -68,10 +70,7 @@ int main(void) {
 
   /* mhh muss hier noch etwas gefreed werden? */
   /* Fügen sie hier die korrekten aufrufe von free() ein */
-  free(p[1][-1]); /* welcher Pointer war das doch gleich?, TODO: Fixme... ;-) */
-  free(p[0][-1]);
-  free(p[3]);
-  
+  free(p[3]); /* welcher Pointer war das doch gleich?, TODO: Fixme... ;-) */
 
   return 0;
 }
