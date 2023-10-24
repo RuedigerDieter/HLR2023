@@ -1,0 +1,13 @@
+mistake1():
+ 
+
+mistake2():
+Mit malloc() wird der Platz für 4 chars reserviert, was allerdings für das 6-int-große Array nicht ausreicht. Dadurch passiert mit dem Schreiben auf buff[2] ein Schreiben out-of-bounds.
+Da in main() &mistake2()[1] aufgerufen wird, wird hier das falsche Element beschrieben.
+
+mistake3():
+
+
+mistake4():
+Das falsche Element von buf wird beschrieben, da nach main() das erste aufgerufen wird.
+free() wird benutzt, bevor buf noch benutzt wird, sodass auf uninitialisierten Speicher zugegriffen wird.

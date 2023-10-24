@@ -1,0 +1,7 @@
+askparamc.c:198
+    invalid read of size 1
+    Tippfehler, bei dem argV[444] statt argV[4], also out of bounds, gelesen wird.
+
+partdiff-seq.c:96
+    invalid write of size 8
+    

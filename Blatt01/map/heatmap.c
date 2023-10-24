@@ -26,11 +26,11 @@ void show_map (void)
 	for (int i = 0; i < 3; i++)
 	{
 		/*
-		 * %f um die Float darzustellen, \t um die Tabelle zu formatieren.
+		 * %.2f um die Float mit 2 Dezimalstellen darzustellen, \t um die Tabelle zu formatieren.
 		 */
 		for (int k = 0; k < 3; k++)
 		{
-			printf("%f \t", map[i][k]);
+			printf("%.2f \t", map[i][k]);
 		}
 		printf("\n");
 	}
