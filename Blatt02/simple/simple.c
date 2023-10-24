@@ -64,10 +64,10 @@ int main(void) {
 
   /* mhh muss hier noch etwas gefreed werden? */
   /* Fügen sie hier die korrekten aufrufe von free() ein */
+  free(&p[0][-1]);
+  free(&p[1][-1]);
+  free(p[2]);
   free(p[3]); /* welcher Pointer war das doch gleich?, TODO: Fixme... ;-) */
-<<<<<<< HEAD
-=======
-  /*Rechnung für Pointer mistake1 */
->>>>>>> 43dd787d348c3406a9b5a27d2101b3e45bac366a
+
   return 0;
 }
