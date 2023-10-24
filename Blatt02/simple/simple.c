@@ -74,6 +74,6 @@ int main(void) {
   /* mhh muss hier noch etwas gefreed werden? */
   /* Fügen sie hier die korrekten aufrufe von free() ein */
   free(p[3]); /* welcher Pointer war das doch gleich?, TODO: Fixme... ;-) */
-  
+  /*Rechnung für Pointer mistake1 */
   return 0;
 }
