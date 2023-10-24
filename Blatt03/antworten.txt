@@ -1,0 +1,34 @@
+1. Batch Queuing
+    1. Was bedeutet der Begriff Batch Queuing im HPC-Bereich?
+
+    2. Welche Aufgaben hat ein HPC-Batch-Queuing-System?
+
+    3. Nennen Sie drei Beispiele für HPC-Batch-Queuing-Systeme.
+        * sbatch
+        
+
+    4. Welches Batch-Queuing-System wird auf dem WR-Cluster verwendet?
+
+    5. Machen Sie sich mit der Manpage von sbatch vertraut. Beschreiben Sie die Funktionsweise des Kommandos.
+
+    6. Wie lassen sich die aktuellen Jobs und deren Status anzeigen?
+
+    7. Machen Sie sich mit dem Befehlsview vertraut. Beschreiben Sie die wichtigsten Vorteile gegenüber dem vorigen Punkt. 
+
+    8. Gibt es eine Möglichkeit, einen bereits abgeschickten Job zu löschen (bevor oder während er läuft)? Wenn ja, wie?
+
+    9. Können auf dem Cluster mehrere Nutzer oder Jobs gleichzeitig denselben west Knoten benutzen? 
+
+    10. Finden Sie heraus wie Sie sich den detaillierten Status eines Jobs ausgeben lasse können.
+
+    11. Welche Scheduling-Verfahren sind bei dem auf dem Cluster benutzten System möglich? Welches wird benutzt? Erläutern Sie jedes der Verfahren kurz.
+
+    12. Finden Sie heraus, wie Sie einen einzelnen Knoten allokieren können. Allokieren Sie einen konkreten Knoten (z. B. west7), bauen Sie eine Verbindung zu diesem Knoten auf und führen sie hostname darauf aus.
+
+    13. Wie hoch ist das Timeout auf dem Cluster, bis alle Knoten wieder freigegeben werden?
+
+    14. Wie können Sie die Priorität Ihrer Jobs nachschauen? Können Sie diese verändern oder beeinflussen?
+
+    15. Welche unterschiedlichen Partitionen sind auf dem Cluster eingerichtet? Wie kann die zu benutzende Partition geändert werden?   
+
+2. Paralleles Starten eines Shell-Scripts
