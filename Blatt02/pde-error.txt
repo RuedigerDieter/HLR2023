@@ -4,4 +4,12 @@ askparamc.c:198
 
 partdiff-seq.c:96
     invalid write of size 8
-    
+    changed N-1 to N+1
+
+partdiff-seq.c:230
+    invalid read of size 8
+    yxz statt xyz
+
+partdiff-seq.c:166
+    invalid read of size 8
+    Speicherplatz, den die Matrix belegt wird doppelt gecleart.
