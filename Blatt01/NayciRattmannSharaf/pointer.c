@@ -3,7 +3,7 @@
 int globaler_wert = 0;
 
 // Löschen Sie diese Variable nach der Bearbeitung aller Funktionen.
-int TODO;
+//int TODO;
 
 void print_pointer(int* zeiger)
 {
