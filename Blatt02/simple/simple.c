@@ -52,10 +52,6 @@ int *mistake4(void) {
   return buf;
 }
 
-/**
- * no need to free p[3], as no malloc() happens. 
- * 
-*/
 
 int main(void) {
   /* Modifizieren Sie diese Zeile nicht! */
@@ -69,6 +65,5 @@ int main(void) {
   /* mhh muss hier noch etwas gefreed werden? */
   /* Fügen sie hier die korrekten aufrufe von free() ein */
   free(p[3]); /* welcher Pointer war das doch gleich?, TODO: Fixme... ;-) */
-  free 
   return 0;
 }
