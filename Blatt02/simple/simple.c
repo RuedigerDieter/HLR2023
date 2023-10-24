@@ -32,14 +32,18 @@ int *mistake2(void) {
   return buf;
 }
 
+// int *mistake3(void) {
+//   /* In dieser Funktion darf kein Speicher direkt allokiert werden. */
+//   int mistake2_ = 0;
+//   int *buf = (int *)&mistake2;
+//   buf[0] = 3;
+//   return buf;
+// } 
 int *mistake3(void) {
-  /* In dieser Funktion darf kein Speicher direkt allokiert werden. */
-  int mistake2_ = 0;
-  int *buf = (int *)&mistake2;
-  buf[0] = 3;
+  int mistake2_ = 3;
+  int *buf = &mistake2_;
   return buf;
 }
-
 
 
 /*
@@ -70,6 +74,6 @@ int main(void) {
   /* mhh muss hier noch etwas gefreed werden? */
   /* Fügen sie hier die korrekten aufrufe von free() ein */
   free(p[3]); /* welcher Pointer war das doch gleich?, TODO: Fixme... ;-) */
-
+  
   return 0;
 }
