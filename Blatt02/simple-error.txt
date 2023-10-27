@@ -1,5 +1,5 @@
 mistake1():
- 
+&&hier muss doch noch was hin, oder?
 
 mistake2():
 Mit malloc() wird der Platz für 4 chars reserviert, was allerdings für das 6-int-große Array nicht ausreicht. Dadurch passiert mit dem Schreiben auf buff[2] ein Schreiben out-of-bounds.
