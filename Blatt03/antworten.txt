@@ -1,34 +1,48 @@
-1. Batch Queuing
-    1. Was bedeutet der Begriff Batch Queuing im HPC-Bereich?
+1. Was bedeutet der Begriff Batch Queuing im HPC-Bereich?
+Batch Queueing, oder Job Scheduling ist die Organisation von Jobs / Batch Prozessen. 
+Im HPC-Bereich wird mit der Regelung von Ausführungsprioritäten und der Verteilung von Ressourcen versucht, die Leistung von Rechenprozessen zu maximieren.
 
-    2. Welche Aufgaben hat ein HPC-Batch-Queuing-System?
+2. Welche Aufgaben hat ein HPC-Batch-Queuing-System?
+- Teilen von Ressourcen unter vielen Nutzern
+- Auftragsverschiebung auf weniger belastete Rechenzeiten / -knoten
+- Vermeidet unnötigen Leerlauf von Rechenressourcen
+- Ermöglicht hohen Durchsatz von Rechenressourcen
 
-    3. Nennen Sie drei Beispiele für HPC-Batch-Queuing-Systeme.
-        * sbatch
-        
+3. Nennen Sie drei Beispiele für HPC-Batch-Queuing-Systeme.
+SLURM, TORQUE, LSF
 
-    4. Welches Batch-Queuing-System wird auf dem WR-Cluster verwendet?
+4. Welches Batch-Queuing-System wird auf dem WR-Cluster verwendet?
+SLURM
 
-    5. Machen Sie sich mit der Manpage von sbatch vertraut. Beschreiben Sie die Funktionsweise des Kommandos.
+5. Machen Sie sich mit der Manpage von sbatch vertraut. Beschreiben Sie die Funktionsweise des Kommandos.
+Mehrere Jobs in einem co-scheduled, heterogenen job zusammenfassen.
 
-    6. Wie lassen sich die aktuellen Jobs und deren Status anzeigen?
+6. Wie lassen sich die aktuellen Jobs und deren Status anzeigen?
+smap, bzw. auch sacct
 
-    7. Machen Sie sich mit dem Befehlsview vertraut. Beschreiben Sie die wichtigsten Vorteile gegenüber dem vorigen Punkt. 
+7. Machen Sie sich mit dem Befehl sview vertraut. Beschreiben Sie die wichtigsten Vorteile gegenüber dem vorigen Punkt.
+sview ist grafisch und sehr viel detailierter gegenüber den anderen Statusanzeigen
 
-    8. Gibt es eine Möglichkeit, einen bereits abgeschickten Job zu löschen (bevor oder während er läuft)? Wenn ja, wie?
+8. Gibt es eine Möglichkeit, einen bereits abgeschickten Job zu löschen (bevor oder während er läuft)? Wenn ja, wie?
+scancel <jobid>
 
-    9. Können auf dem Cluster mehrere Nutzer oder Jobs gleichzeitig denselben west Knoten benutzen? 
+9. Können auf dem Cluster mehrere Nutzer oder Jobs gleichzeitig denselben west- Knoten benutzen?
+Mit sbatch? bzw. anderem Job-Scheduling
 
-    10. Finden Sie heraus wie Sie sich den detaillierten Status eines Jobs ausgeben lasse können.
+10. Finden Sie heraus wie Sie sich den detaillierten Status eines Jobs ausgeben lassen können.
+scontrol show job <jobid>
 
-    11. Welche Scheduling-Verfahren sind bei dem auf dem Cluster benutzten System möglich? Welches wird benutzt? Erläutern Sie jedes der Verfahren kurz.
+11. Welche Scheduling-Verfahren sind bei dem auf dem Cluster benutzten System möglich? Welches wird benutzt? Erläutern Sie jedes der Verfahren kurz.
+?
 
-    12. Finden Sie heraus, wie Sie einen einzelnen Knoten allokieren können. Allokieren Sie einen konkreten Knoten (z. B. west7), bauen Sie eine Verbindung zu diesem Knoten auf und führen sie hostname darauf aus.
+12. Finden Sie heraus, wie Sie einen einzelnen Knoten allokieren können. Allokieren Sie einen konkreten Knoten (z. B. west7), bauen Sie eine Verbindung zu diesem Knoten auf und führen sie hostname darauf aus.
+?
 
-    13. Wie hoch ist das Timeout auf dem Cluster, bis alle Knoten wieder freigegeben werden?
+13. Wie hoch ist das Timeout auf dem Cluster, bis alle Knoten wieder freigegeben werden?
+?
 
-    14. Wie können Sie die Priorität Ihrer Jobs nachschauen? Können Sie diese verändern oder beeinflussen?
+14. Wie können Sie die Priorität Ihrer Jobs nachschauen? Können Sie diese verändern oder beeinflussen?
+?
 
-    15. Welche unterschiedlichen Partitionen sind auf dem Cluster eingerichtet? Wie kann die zu benutzende Partition geändert werden?   
-
-2. Paralleles Starten eines Shell-Scripts
+15. Welche unterschiedlichen Partitionen sind auf dem Cluster eingerichtet? Wie kann die zu benutzende Partition geändert werden?
+?
