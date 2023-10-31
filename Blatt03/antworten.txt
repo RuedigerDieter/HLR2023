@@ -54,3 +54,12 @@ gesetzt wird die Priorität mit "--priority", aber nur ops und Admins können si
 15. Welche unterschiedlichen Partitionen sind auf dem Cluster eingerichtet? Wie kann die zu benutzende Partition geändert werden?
 amd, magny, nehalem, west.
 gewechselt werden kann mit "-p", "--partition"
+
+
+2.4.
+
+Ja, timescript.sh könnte auch selber timescript.out erzeugen.
+    1   #!/bin/bash
+    2   X=$(hostname --short)
+    3   Y=$(date --iso-8601=ns)
+    4   echo "$X:$Y" > timescript.out   
