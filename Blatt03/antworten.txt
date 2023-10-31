@@ -57,6 +57,14 @@ gewechselt werden kann mit "-p", "--partition"
 
 
 2.4.
+* Die Reihenfolge der Ausgaben ist nicht chronologisch
+
+* Die Reihenfolge der Nodes ist nicht konsistent. 
+
+* Der Zeitabstand zwischen den einzelnen Ausgaben ist nicht konsistent.
+    Rein pragmatisch kann es nicht möglich sein, dass der Hypervisor(?) die jobs an alle nodes gleichzeitig schickt. 
+    Die Unregelmäßigkeit kommt wahrscheinlich daher, dass ein gewisser overhead durch andere OS-Aufgaben besteht.
+    Auch auf einzelnen nodes kommt es zu uneinheitlichen Abständen, was wahrscheinlich ebenfalls an overhead liegt.
 
 Ja, timescript.sh könnte auch selber timescript.out erzeugen.
     1   #!/bin/bash
