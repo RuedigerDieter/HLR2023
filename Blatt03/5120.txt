@@ -10,3 +10,9 @@ Berechnungszeit:    22.816024 s
 Berechnungszeit:    22.853794 s 
 Berechnungszeit:    22.826516 s 
 Berechnungszeit:    22.878837 s 
+Berechnungszeit:    16.433252 s 
+Berechnungszeit:    16.415537 s 
+Berechnungszeit:    16.432191 s 
+Berechnungszeit:    16.408148 s 
+Berechnungszeit:    16.447636 s 
+Berechnungszeit:    16.404192 s 

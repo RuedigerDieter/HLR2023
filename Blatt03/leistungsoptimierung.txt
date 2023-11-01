@@ -2,6 +2,14 @@ Tests mit jeweils 6 durchlaufen, Durchschnittswerte
 Keine Änderungen:
     5120:   64.0321233333333s
     10240:  50.6072748333333
+
+    => TARGET:
+    5120:   ~6.4
+    10240:  ~5.1
 -O3 Compiler-Option
     5120:   22.8504776666667
     10240:  6.35681933333333
+partdiff-seq.c:220-238
+loops iterieren jetzt über Spalten, nicht über Reihen
+    5120:   16.4234926666667
+    10240:  6.24224116666667
