@@ -156,9 +156,9 @@ initMatrices (struct calculation_arguments* arguments, struct options* options)
 	/* initialize borders, depending on function (function 2: nothing to do) */
 	if (options->inf_func == FUNC_F0)
 	{
-		for(i = 0; i < N; i++)
+		for (j = 0; j < arguments->num_matrices; j++)
 		{
-			for (j = 0; j < arguments->num_matrices; j++)
+			for(i = 0; i < N; i++)
 			{
 				Matrix[j][i][0] = 1 + (1 - (h * i)); // Linke Kante
 				Matrix[j][N][i] = 1 - (h * i); // Untere Kante

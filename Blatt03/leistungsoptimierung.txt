@@ -9,7 +9,8 @@ Keine Änderungen:
 -O3 Compiler-Option
     5120:   22.8504776666667
     10240:  6.35681933333333
-partdiff-seq.c:220-238
-loops iterieren jetzt über Spalten, nicht über Reihen
+partdiff-seq.c:220-238 loop iteriert jetzt über Spalten, nicht über Reihen
     5120:   16.4234926666667
     10240:  6.24224116666667
+
+partdiff-seq.c:145-154
