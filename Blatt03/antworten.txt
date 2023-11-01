@@ -50,6 +50,8 @@ scontrol show job <jobid>
 
 **Reservation Scheduling:** Administratoren können Zeitfenster reservieren, in denen bestimmte Ressourcen für bestimmte Benutzer oder Zwecke exklusiv genutzt werden können.
 
+Auf dem Cluster wird der Backfill-Scheduler verwendet.
+
 12. Finden Sie heraus, wie Sie einen einzelnen Knoten allokieren können. Allokieren Sie einen konkreten Knoten (z. B. west7), bauen Sie eine Verbindung zu diesem Knoten auf und führen sie hostname darauf aus.
 aufg12.sh:
     1   #!/bin/sh
