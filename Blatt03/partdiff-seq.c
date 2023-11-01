@@ -113,17 +113,19 @@ allocateMatrices (struct calculation_arguments* arguments)
 	int i, j;
 
 	int N = arguments->N;
+	int width = N + 1;
 
-	arguments->M = allocateMemory(arguments->num_matrices * (N + 1) * (N + 1) * sizeof(double));
+	arguments->M = allocateMemory(arguments->num_matrices * (width) * (width) * sizeof(double));
 	arguments->Matrix = allocateMemory(arguments->num_matrices * sizeof(double**));
 
 	for (i = 0; i < arguments->num_matrices; i++)
 	{
-		arguments->Matrix[i] = allocateMemory((N + 1) * sizeof(double*));
+		
+		arguments->Matrix[i] = allocateMemory(width * sizeof(double*));
 
 		for (j = 0; j <= N; j++)
 		{
-			arguments->Matrix[i][j] = (double*)(arguments->M + (i * (N + 1) * (N + 1)) + (j * (N + 1)));
+			arguments->Matrix[i][j] = (double*)(arguments->M + (i * width * width) + (j * width));
 		}
 	}
 }
@@ -166,7 +168,7 @@ initMatrices (struct calculation_arguments* arguments, struct options* options)
 				Matrix[j][i][0] = 1 + (1 - k); // Linke Kante
 				Matrix[j][N][i] = 1 - k; // Untere Kante
 				Matrix[j][n][N] = k; // Rechte Kante
-				Matrix[j][0][n] = 1 + h * i; // Obere Kante
+				Matrix[j][0][n] = 1 + k; // Obere Kante
 			}
 		}
 	}

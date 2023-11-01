@@ -12,3 +12,6 @@ Keine Änderungen:
 partdiff-seq.c:145-154,partdiff-seq.c:220-238 loops iterieren jetzt über Spalten, nicht über Reihen
     5120:   16.485923
     10240:  6.253652
+partdiff-seqc:allocateMatrices(),initMatrices() fasse wiederholte Rechnungen zu lokalen Variablen zusammen
+    5120:   16.4302561666667
+    10240:  6.238832
