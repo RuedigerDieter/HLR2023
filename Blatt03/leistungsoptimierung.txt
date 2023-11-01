@@ -12,7 +12,14 @@ Keine Änderungen:
 partdiff-seq.c:145-154,partdiff-seq.c:220-238 loops iterieren jetzt über Spalten, nicht über Reihen
     5120:   16.485923
     10240:  6.253652
-partdiff-seqc:allocateMatrices(),initMatrices() fasse wiederholte Rechnungen zu lokalen Variablen zusammen
+partdiff-seq.c:allocateMatrices(),initMatrices() fasse wiederholte Rechnungen zu lokalen Variablen zusammen
     5120:   16.4302561666667
     10240:  6.238832
 laut perf ist viel overhead bei getResiduum().
+etwa 13% der Zeit werden mit cvtsi2sd, also der int-double konversion von x, y verbracht,
+etwa 14% mit call von sin@plt. Dies kann wahrscheinlich nicht optimiert werden, weil sin aus Glibc geladen werden muss.
+partdiff-seq.c:getResiduum() Der Residuum-Wert hängt nur vom star ab, (TWO_PI_SQUARE * sin(x*PI*arguments->h) usw.) hängt nur von den Indizes der jeweiligen Array-Elemente ab.
+Daher kann man diese Werte, ohne star, vorher in ein Array ablegen, damit die Sinus-Funktion nicht jedes mal neu auf und vom Stack muss. 
+Damit verschnellert sich das Programm signifikant, wenn diese Störfunktion benutzt wird.
+    5120:   3.49313633333333
+    10240:  6.37737366666667

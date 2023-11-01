@@ -68,3 +68,17 @@ Berechnungszeit:    13.145543 s
 Berechnungszeit:    13.191597 s 
 Berechnungszeit:    12.922010 s 
 done
+Berechnungszeit:    16.939811 s 
+Berechnungszeit:    16.613967 s 
+Berechnungszeit:    16.952745 s 
+Berechnungszeit:    16.769439 s 
+Berechnungszeit:    16.900200 s 
+Berechnungszeit:    17.145615 s 
+done
+Berechnungszeit:    3.562233 s 
+Berechnungszeit:    3.402663 s 
+Berechnungszeit:    3.467027 s 
+Berechnungszeit:    3.533826 s 
+Berechnungszeit:    3.514418 s 
+Berechnungszeit:    3.478651 s 
+done

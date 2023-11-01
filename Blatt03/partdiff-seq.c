@@ -179,7 +179,7 @@ initMatrices (struct calculation_arguments* arguments, struct options* options)
 /* Input: x,y - actual column and row                                       */
 /* ************************************************************************ */
 double
-getResiduum (struct calculation_arguments* arguments, struct options* options, int x, int y, double star)
+getResiduum (struct options* options, int x, int y, double star, double** SinusMatrix)
 {
 	if (options->inf_func == FUNC_F0)
 	{
@@ -187,7 +187,7 @@ getResiduum (struct calculation_arguments* arguments, struct options* options, i
 	}
 	else
 	{	
-			return ((TWO_PI_SQUARE * sin((double)(y) * PI * arguments->h) * sin((double)(x) * PI * arguments->h) * arguments->h * arguments->h - star) / 4.0);
+		return ((SinusMatrix[x][y] - star) / 4.0);
 	}
 }
 
@@ -206,6 +206,17 @@ calculate (struct calculation_arguments* arguments, struct calculation_results *
 
 	int N = arguments->N;
 	double*** Matrix = arguments->Matrix;
+	
+	double** SinusMatrix = malloc(sizeof(double*) * (N + 1));
+	for (i = 0; i <= N; i++)
+	{
+		SinusMatrix[i] = malloc(sizeof(double) * (N + 1));
+		for (j = 0; j <= N; j++)
+		{
+			SinusMatrix[i][j] = TWO_PI_SQUARE * sin((double)(i) * PI * arguments->h) * sin((double)(j) * PI * arguments->h)* arguments->h * arguments->h ;
+		}
+	}
+
 
 	/* initialize m1 and m2 depending on algorithm */
 	if (options->method == METH_GAUSS_SEIDEL)
@@ -234,7 +245,7 @@ calculate (struct calculation_arguments* arguments, struct calculation_results *
 						+ 4.0 * Matrix[m2][i][j] // C
 				;
 
-				residuum = getResiduum(arguments, options, i, j, star);
+				residuum = getResiduum( options, i, j, star, SinusMatrix);
 				korrektur = residuum;
 				residuum = (residuum < 0) ? -residuum : residuum;
 				results->stat_precision = (residuum < results->stat_precision) ? results->stat_precision : residuum;
