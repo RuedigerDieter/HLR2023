@@ -4,33 +4,67 @@ Berechnungszeit:    50.592349 s
 Berechnungszeit:    50.702808 s 
 Berechnungszeit:    50.620413 s 
 Berechnungszeit:    50.619805 s 
+done
 Berechnungszeit:    6.378372 s 
 Berechnungszeit:    6.264378 s 
 Berechnungszeit:    6.384951 s 
 Berechnungszeit:    6.368440 s 
 Berechnungszeit:    6.367319 s 
 Berechnungszeit:    6.377456 s 
+done
 Berechnungszeit:    6.266196 s 
 Berechnungszeit:    6.241135 s 
 Berechnungszeit:    6.233489 s 
 Berechnungszeit:    6.235994 s 
 Berechnungszeit:    6.240690 s 
-Berechnungszeit:    6.235943 s 
+Berechnungszeit:    6.235943 s
+done
 Berechnungszeit:    6.249132 s 
 Berechnungszeit:    6.273869 s 
 Berechnungszeit:    6.244854 s 
 Berechnungszeit:    6.248557 s 
 Berechnungszeit:    6.263253 s 
-Berechnungszeit:    6.242247 s 
+Berechnungszeit:    6.242247 s
+done
 Berechnungszeit:    6.246205 s 
 Berechnungszeit:    6.236674 s 
 Berechnungszeit:    6.234318 s 
 Berechnungszeit:    6.248297 s 
 Berechnungszeit:    6.236403 s 
 Berechnungszeit:    6.251229 s 
+done
 Berechnungszeit:    6.239537 s 
 Berechnungszeit:    6.240670 s 
 Berechnungszeit:    6.235720 s 
 Berechnungszeit:    6.241751 s 
 Berechnungszeit:    6.236882 s 
 Berechnungszeit:    6.238432 s 
+done
+Berechnungszeit:    6.241554 s 
+Berechnungszeit:    6.245295 s 
+Berechnungszeit:    6.243410 s 
+Berechnungszeit:    6.236242 s 
+Berechnungszeit:    6.241873 s 
+Berechnungszeit:    6.242952 s 
+done
+Berechnungszeit:    9.714148 s 
+Berechnungszeit:    9.718365 s 
+Berechnungszeit:    9.716938 s 
+Berechnungszeit:    9.716221 s 
+Berechnungszeit:    9.738342 s 
+Berechnungszeit:    9.747542 s 
+done
+Berechnungszeit:    6.652233 s 
+Berechnungszeit:    6.591184 s 
+Berechnungszeit:    6.508669 s 
+Berechnungszeit:    6.610816 s 
+Berechnungszeit:    6.655527 s 
+Berechnungszeit:    6.516467 s 
+done
+Berechnungszeit:    6.294947 s 
+Berechnungszeit:    6.419566 s 
+Berechnungszeit:    6.305068 s 
+Berechnungszeit:    6.483763 s 
+Berechnungszeit:    6.502276 s 
+Berechnungszeit:    6.428209 s 
+done

@@ -1,6 +1,6 @@
 Tests mit jeweils 6 durchlaufen, Durchschnittswerte
 Keine Änderungen:
-    5120:   64.0321233333333s
+    5120:   64.0321233333333
     10240:  50.6072748333333
 
     => TARGET:
@@ -15,3 +15,4 @@ partdiff-seq.c:145-154,partdiff-seq.c:220-238 loops iterieren jetzt über Spalte
 partdiff-seqc:allocateMatrices(),initMatrices() fasse wiederholte Rechnungen zu lokalen Variablen zusammen
     5120:   16.4302561666667
     10240:  6.238832
+laut perf ist viel overhead bei getResiduum().

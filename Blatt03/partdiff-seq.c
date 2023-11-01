@@ -186,8 +186,8 @@ getResiduum (struct calculation_arguments* arguments, struct options* options, i
 		return ((-star) / 4.0);
 	}
 	else
-	{
-		return ((TWO_PI_SQUARE * sin((double)(y) * PI * arguments->h) * sin((double)(x) * PI * arguments->h) * arguments->h * arguments->h - star) / 4.0);
+	{	
+			return ((TWO_PI_SQUARE * sin((double)(y) * PI * arguments->h) * sin((double)(x) * PI * arguments->h) * arguments->h * arguments->h - star) / 4.0);
 	}
 }
 
@@ -227,11 +227,12 @@ calculate (struct calculation_arguments* arguments, struct calculation_results *
 			/* over all columns */
 			for (j = 1; j < N; j++)
 			{
-				star = 	-Matrix[m2][i-1][j] 
-						- Matrix[m2][i][j-1] 
-						- Matrix[m2][i][j+1] 
-						- Matrix[m2][i+1][j] 
-						+ 4.0 * Matrix[m2][i][j];
+				star = 	-Matrix[m2][i-1][j]  // A			A
+						- Matrix[m2][i][j-1] //	B		B   C   D
+						- Matrix[m2][i][j+1] //	D			E
+						- Matrix[m2][i+1][j] // E
+						+ 4.0 * Matrix[m2][i][j] // C
+				;
 
 				residuum = getResiduum(arguments, options, i, j, star);
 				korrektur = residuum;

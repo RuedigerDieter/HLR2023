@@ -4,33 +4,67 @@ Berechnungszeit:    64.360659 s
 Berechnungszeit:    63.775698 s 
 Berechnungszeit:    64.198225 s 
 Berechnungszeit:    63.883641 s 
+done
 Berechnungszeit:    22.885050 s 
 Berechnungszeit:    22.842645 s 
 Berechnungszeit:    22.816024 s 
 Berechnungszeit:    22.853794 s 
 Berechnungszeit:    22.826516 s 
 Berechnungszeit:    22.878837 s 
+done
 Berechnungszeit:    16.433252 s 
 Berechnungszeit:    16.415537 s 
 Berechnungszeit:    16.432191 s 
 Berechnungszeit:    16.408148 s 
 Berechnungszeit:    16.447636 s 
 Berechnungszeit:    16.404192 s 
+done
 Berechnungszeit:    16.592853 s 
 Berechnungszeit:    16.465706 s 
 Berechnungszeit:    16.476918 s 
 Berechnungszeit:    16.453719 s 
 Berechnungszeit:    16.489860 s 
 Berechnungszeit:    16.436482 s 
+done
 Berechnungszeit:    16.429041 s 
 Berechnungszeit:    16.413768 s 
 Berechnungszeit:    16.478187 s 
 Berechnungszeit:    16.434309 s 
 Berechnungszeit:    16.530500 s 
 Berechnungszeit:    16.491017 s 
+done
 Berechnungszeit:    16.420624 s 
 Berechnungszeit:    16.433256 s 
 Berechnungszeit:    16.424794 s 
 Berechnungszeit:    16.412567 s 
 Berechnungszeit:    16.431096 s 
 Berechnungszeit:    16.459200 s 
+done
+Berechnungszeit:    16.399440 s 
+Berechnungszeit:    16.411669 s 
+Berechnungszeit:    16.438002 s 
+Berechnungszeit:    16.411312 s 
+Berechnungszeit:    16.424682 s 
+Berechnungszeit:    16.427324 s 
+done
+Berechnungszeit:    16.641623 s 
+Berechnungszeit:    16.625331 s 
+Berechnungszeit:    16.621715 s 
+Berechnungszeit:    16.641913 s 
+Berechnungszeit:    16.791151 s 
+Berechnungszeit:    16.839899 s 
+done
+Berechnungszeit:    16.889246 s 
+Berechnungszeit:    17.134673 s 
+Berechnungszeit:    17.325021 s 
+Berechnungszeit:    17.367439 s 
+Berechnungszeit:    17.121088 s 
+Berechnungszeit:    17.317410 s 
+done
+Berechnungszeit:    12.853496 s 
+Berechnungszeit:    12.919866 s 
+Berechnungszeit:    12.702997 s 
+Berechnungszeit:    13.145543 s 
+Berechnungszeit:    13.191597 s 
+Berechnungszeit:    12.922010 s 
+done
