@@ -165,8 +165,8 @@ initMatrices (struct calculation_arguments* arguments, struct options* options)
 				n = N - i;
 				Matrix[j][i][0] = 1 + (1 - k); // Linke Kante
 				Matrix[j][N][i] = 1 - k; // Untere Kante
-				Matrix[j][N - i][N] = k; // Rechte Kante
-				Matrix[j][0][N - i] = 1 + h * i; // Obere Kante
+				Matrix[j][n][N] = k; // Rechte Kante
+				Matrix[j][0][n] = 1 + h * i; // Obere Kante
 			}
 		}
 	}
