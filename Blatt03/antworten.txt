@@ -33,7 +33,22 @@ Mit sbatch? bzw. anderem Job-Scheduling
 scontrol show job <jobid>
 
 11. Welche Scheduling-Verfahren sind bei dem auf dem Cluster benutzten System möglich? Welches wird benutzt? Erläutern Sie jedes der Verfahren kurz.
-?
+
+**Priority Scheduling:** SLURM ermöglicht die Zuweisung von Prioritäten zu Jobs. Jobs mit höheren Prioritäten haben Vorrang vor solchen mit niedrigeren Prioritäten. Dieses Verfahren ist hilfreich, um sicherzustellen, dass kritische Aufgaben vorrangig behandelt werden.
+
+**Fair-Share Scheduling:** SLURM kann Ressourcen auf der Grundlage eines Fair-Share-Algorithmus zuweisen. Dies bedeutet, dass Benutzer, die in der Vergangenheit weniger Ressourcen verwendet haben, eine höhere Priorität erhalten, um sicherzustellen, dass die Ressourcen fair aufgeteilt werden.
+
+**Backfill Scheduling:** Das Backfill-Verfahren ermöglicht die sofortige Ausführung von Jobs, wenn Lücken im Ressourcenplan vorhanden sind, ohne die geplanten Jobs zu beeinträchtigen. Dies hilft, die Auslastung des Clusters zu maximieren.
+
+**Gang Scheduling:** SLURM unterstützt das Scheduling von Jobgruppen, die gleichzeitig ausgeführt werden müssen, um die Abhängigkeiten zwischen den Jobs zu berücksichtigen. Dies ist nützlich für Anwendungen, bei denen mehrere Jobs zusammenarbeiten müssen.
+
+**Preemption:** Administratoren können Jobs priorisieren, um bestimmte Ressourcen freizugeben, wenn dringendere Aufgaben anstehen. SLURM kann Aufgaben beenden, um die Ressourcen freizugeben.
+
+**QOS:** SLURM ermöglicht die Definition von QOS-Partitionen, um unterschiedliche Servicelevel für Benutzer oder Projekte bereitzustellen. Diese Partitionen können bestimmte Ressourcenkontingente und Prioritäten haben.
+
+**Fair Tree Scheduling:** Dieses Verfahren kann verwendet werden, um Jobs in einer hierarchischen Struktur von Partitionen und Warteschlangen effizient zuzuweisen.
+
+**Reservation Scheduling:** Administratoren können Zeitfenster reservieren, in denen bestimmte Ressourcen für bestimmte Benutzer oder Zwecke exklusiv genutzt werden können.
 
 12. Finden Sie heraus, wie Sie einen einzelnen Knoten allokieren können. Allokieren Sie einen konkreten Knoten (z. B. west7), bauen Sie eine Verbindung zu diesem Knoten auf und führen sie hostname darauf aus.
 aufg12.sh:
