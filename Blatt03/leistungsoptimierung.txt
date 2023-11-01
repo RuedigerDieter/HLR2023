@@ -1,0 +1,7 @@
+Tests mit jeweils 6 durchlaufen, Durchschnittswerte
+Keine Änderungen:
+    5120:   64.0321233333333s
+    10240:  50.6072748333333
+-O3 Compiler-Option
+    5120:   22.8504776666667
+    10240:  6.35681933333333

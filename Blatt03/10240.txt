@@ -1,0 +1,12 @@
+Berechnungszeit:    50.534272 s 
+Berechnungszeit:    50.574002 s 
+Berechnungszeit:    50.592349 s 
+Berechnungszeit:    50.702808 s 
+Berechnungszeit:    50.620413 s 
+Berechnungszeit:    50.619805 s 
+Berechnungszeit:    6.378372 s 
+Berechnungszeit:    6.264378 s 
+Berechnungszeit:    6.384951 s 
+Berechnungszeit:    6.368440 s 
+Berechnungszeit:    6.367319 s 
+Berechnungszeit:    6.377456 s 
