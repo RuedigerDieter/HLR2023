@@ -176,12 +176,32 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 	}
 }
 
+struct t_data {
+	int num_threads;
+	int lock;
+	struct calculation_arguments* arguments;
+	struct calculation_results* results;
+	struct options* options;
+};
+
+void t_calculate(struct t_data* t_data) 
+{
+	while (1)
+	{
+		if (!t_data->lock)
+		{
+			// TODO calculate
+			break; 
+		}
+	}
+}
+
 /* ************************************************************************ */
 /* calculate: solves the equation                                           */
 /* ************************************************************************ */
 static
 void
-calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, scruct t_data* t_data)
 {
 	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
@@ -202,6 +222,16 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	{
 		m1 = 0;
 		m2 = 1;
+
+		// TODO initialise and create threads
+		t_data->lock = 1;
+		t_data->num_threads = options->number;
+		t_data->arguments = arguments;
+		t_data->results = results;
+		t_data->options = options;
+
+		
+
 	}
 	else
 	{
