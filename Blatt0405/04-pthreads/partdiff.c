@@ -182,7 +182,7 @@ struct t_data {
 	int num_threads;
 	int lock;
 	pthread_t* threads;
-	int const N;
+	int N;
 	struct calculation_arguments* arguments;
 	struct calculation_results* results;
 	struct options* options;
@@ -213,7 +213,7 @@ void t_calculate(void* args)
 /* ************************************************************************ */
 static
 void
-calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, scruct t_data* t_data)
+calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct t_data* t_data)
 {
 	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
@@ -429,6 +429,7 @@ main (int argc, char** argv)
 	struct options options;
 	struct calculation_arguments arguments;
 	struct calculation_results results;
+	struct t_data t_data;
 
 	askParams(&options, argc, argv);
 
@@ -438,7 +439,7 @@ main (int argc, char** argv)
 	initMatrices(&arguments, &options);
 
 	gettimeofday(&start_time, NULL);
-	calculate(&arguments, &results, &options);
+	calculate(&arguments, &results, &options,&t_data);
 	gettimeofday(&comp_time, NULL);
 
 	displayStatistics(&arguments, &results, &options);
