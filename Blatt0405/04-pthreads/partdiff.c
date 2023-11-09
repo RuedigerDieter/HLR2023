@@ -182,12 +182,19 @@ struct t_data {
 	int num_threads;
 	int lock;
 	pthread_t* threads;
+	int const N;
 	struct calculation_arguments* arguments;
 	struct calculation_results* results;
 	struct options* options;
 };
 
-void t_calculate(struct t_data* t_data, int thread_id) 
+struct t_args {
+	int thread_id;
+	int* chunk;
+	struct t_data* t_data;
+};
+
+void t_calculate(struct t_args* t_args) 
 {
 
 	while (1)
@@ -195,6 +202,7 @@ void t_calculate(struct t_data* t_data, int thread_id)
 		if (!t_data->lock)
 		{
 			// TODO calculate
+			// TODO ignore borders
 			break; 
 		}
 	}
@@ -234,7 +242,13 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		t_data->options = options;
 
 		t_data->threads = malloc(sizeof(pthread_t) * options->number);	// 
-		t_data->thread_id = malloc(sizeof(int) * options->number);		//
+		
+		t_data->N = N;
+
+		int startindex
+
+		int cpt = N * N / options->number;			// Cells pro Thread
+		int cpt_rest = (N * N) % options->number;	// Rest Cells pro Thread
 
 		for (i = 0; i < options->number; i++)
 		{
