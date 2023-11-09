@@ -189,8 +189,8 @@ struct t_data {
 };
 
 typedef struct  {
-	int thread_id;
-	int* chunk;
+	int position;
+	int chunksize;
 	struct t_data* t_data;
 }T_args;
 
@@ -201,8 +201,11 @@ void t_calculate(void* args)
 	{
 		if (!t_args->t_data->lock)
 		{
+			for (int i = t_args->position; i++; i < (t_args->position + t_args->chunksize)) // TODO evtl. <= ?
+			{
 			// TODO calculate
 			// TODO ignore borders
+			}
 			break; 
 		}
 	}
@@ -250,8 +253,22 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		int cpt = N * N / options->number;			// Cells pro Thread
 		int cpt_rest = (N * N) % options->number;	// Rest Cells pro Thread
 
-		for (i = 0; i < options->number; i++)
+		int position;
+
+		for (i = 0; i < options->number; i++)		// setup für alle threads
 		{
+			t_args[i].position = position;			// setzt die Startposition für die Matrix	
+			if (cpt_rest > 0)
+			{
+				t_args[i].chunksize = cpt + 1;
+				cpt_rest--;
+				position += cpt + 1;
+			}
+			else
+			{
+				t_args[i].chunksize = cpt;
+				position += cpt;
+			}
 			pthread_create(&t_data->threads[i], NULL, t_calculate, (void*) t_args);
 		}
 
