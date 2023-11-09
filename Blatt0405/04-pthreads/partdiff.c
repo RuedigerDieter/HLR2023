@@ -29,6 +29,8 @@
 
 #include "partdiff.h"
 
+#include <pthread.h>
+
 struct calculation_arguments
 {
 	uint64_t  N;              /* number of spaces between lines (lines=N+1)     */
@@ -179,13 +181,15 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 struct t_data {
 	int num_threads;
 	int lock;
+	pthread_t* threads;
 	struct calculation_arguments* arguments;
 	struct calculation_results* results;
 	struct options* options;
 };
 
-void t_calculate(struct t_data* t_data) 
+void t_calculate(struct t_data* t_data, int thread_id) 
 {
+
 	while (1)
 	{
 		if (!t_data->lock)
@@ -223,17 +227,18 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		m1 = 0;
 		m2 = 1;
 
-		// TODO initialise and create threads
-		t_data->lock = 1;
-		t_data->num_threads = options->number;
-		t_data->arguments = arguments;
+		t_data->lock = 1;						// Setzt die Rechensperre 
+		t_data->num_threads = options->number;	// Anzahl der Threads
+		t_data->arguments = arguments;			
 		t_data->results = results;
 		t_data->options = options;
 
+		t_data->threads = malloc(sizeof(pthread_t) * options->number);	// 
+		t_data->thread_id = malloc(sizeof(int) * options->number);		//
+
 		for (i = 0; i < options->number; i++)
 		{
-			
-			pthread_create(&threads[i], NULL, t_calculate, (void*) t_data);
+			pthread_create(&t_data->threads[i], NULL, t_calculate, (void*) t_data);
 		}
 
 	}
