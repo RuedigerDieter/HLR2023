@@ -179,19 +179,19 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 }
 
 struct t_data {
-	int num_threads;
-	int lock;
-	pthread_t* threads;
-	int N;
+	int num_threads;						// Anzahl der Threads, vllt unnötig
+	int lock;								// Sperre für die Threads
+	pthread_t* threads;						// Array für die Threads
+	int N;									// N
 	struct calculation_arguments* arguments;
 	struct calculation_results* results;
 	struct options* options;
 };
 
 typedef struct  {
-	int position;
-	int chunksize;
-	struct t_data* t_data;
+	int position;							// Startindex pro thread
+	int chunksize;							// Größe des zu berechnenden Bereichs
+	struct t_data* t_data;					// globale Variablen
 }T_args;
 
 void t_calculate(void* args) 
@@ -244,11 +244,11 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		t_data->results = results;
 		t_data->options = options;
 
-		t_data->threads = malloc(sizeof(pthread_t) * options->number);	// 
+		t_data->threads = malloc(sizeof(pthread_t) * options->number);	// Array für die Threads 
 		
 		t_data->N = N;
 
-		T_args* t_args = malloc(sizeof(T_args) * options->number);
+		T_args* t_args = malloc(sizeof(T_args) * options->number); // TODO speicher freimachen
 
 		int cpt = N * N / options->number;			// Cells pro Thread
 		int cpt_rest = (N * N) % options->number;	// Rest Cells pro Thread
@@ -257,7 +257,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 
 		for (i = 0; i < options->number; i++)		// setup für alle threads
 		{
-			t_args[i].position = position;			// setzt die Startposition für die Matrix	
+			t_args[i].position = position;			// setzt die Startposition für die Matrix und verteilt dabei den Rest, damit alle Zellen sequentiell zugewiesen sind.
 			if (cpt_rest > 0)
 			{
 				t_args[i].chunksize = cpt + 1;
