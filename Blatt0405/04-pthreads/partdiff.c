@@ -230,7 +230,11 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		t_data->results = results;
 		t_data->options = options;
 
-		
+		for (i = 0; i < options->number; i++)
+		{
+			
+			pthread_create(&threads[i], NULL, t_calculate, (void*) t_data);
+		}
 
 	}
 	else
