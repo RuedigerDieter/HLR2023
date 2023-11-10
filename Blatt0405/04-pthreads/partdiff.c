@@ -232,6 +232,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 
 	int term_iteration = options->term_iteration;
 
+	T_args* t_args;
 	/* initialize m1 and m2 depending on algorithm */
 	if (options->method == METH_JACOBI)
 	{
@@ -248,7 +249,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		
 		t_data->N = N;
 
-		T_args* t_args = malloc(sizeof(T_args) * options->number); // TODO speicher freimachen
+		t_args = malloc(sizeof(T_args) * options->number);
 
 		int cpt = N * N / options->number;			// Cells pro Thread
 		int cpt_rest = (N * N) % options->number;	// Rest Cells pro Thread
@@ -346,6 +347,13 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	}
 
 	results->m = m2;
+
+	if (options->method == METH_JACOBI) //freeing memory for Threading
+	{
+		free(t_data->threads);
+		free(t_args);
+	}
+
 }
 
 /* ************************************************************************ */
