@@ -28,6 +28,7 @@
 #include <sys/time.h>
 
 #include "partdiff.h"
+#include <pthread.h>
 
 struct calculation_arguments
 {
@@ -37,6 +38,7 @@ struct calculation_arguments
 	double    ***Matrix;      /* index matrix used for addressing M             */
 	double    *M;             /* two matrices with real values                  */
 };
+
 
 struct calculation_results
 {
@@ -367,6 +369,63 @@ displayMatrix (struct calculation_arguments* arguments, struct calculation_resul
 	fflush (stdout);
 }
 
+struct thread_arg{
+	int thread_num;
+	int work_length;
+};
+
+void runThread(void *args)
+{
+	thread_arg *thread_args = (thread_arg*) args;
+	int thread_num = thread_args->thread_num;
+	int work_length = thread_args->work_length;
+
+	/**********************************************/
+
+}
+
+void createThreads(struct calculation_arguments* arguments, struct options* options, pthread_t* threads, thread_arg* thread_args)
+{
+    int t = options->number;
+    int N = arguments->N;
+    
+    int M = (N-1) * (N-1);
+    int L = (int) (M / t);
+    int R = M - L * t;
+    int pos = 0;
+
+    thread_args = malloc(sizeof(thread_arg) * t);
+
+    for(int i = 0; i < t; i++) {
+		thread_args[i].thread_num = t;
+		int has_remainder = t < R;
+        thread_args[i].work_length = L + has_remainder;
+    }
+
+	for(int i = 0; i < t; i++) {
+		if (pthread_create(&threads[i], NULL, runThread, (void *)&thread_args[i]) != 0) {
+        	fprintf(stderr, "Error creating thread\n");
+        	return 1;
+    	}
+	}
+
+	print("created threads successfully!");
+
+}
+
+void freeThreads(pthread_t* threads, int* work_lengths) {
+    free(threads);
+    free(work_lengths);
+}
+
+void waitForThreads(int t, pthread_t* threads) {
+
+	for(int i = 0; i < t; i++) {
+		pthread_join(thread_id[i], NULL);
+	}
+	
+}
+
 /* ************************************************************************ */
 /*  main                                                                    */
 /* ************************************************************************ */
@@ -377,6 +436,13 @@ main (int argc, char** argv)
 	struct calculation_arguments arguments;
 	struct calculation_results results;
 
+	/**
+	 * fuer t threads jeweils die laenge an zu bearbeitenden Positionen
+	*/
+    int *work_lengths;
+
+    pthread_t *threads;
+
 	askParams(&options, argc, argv);
 
 	initVariables(&arguments, &results, &options);
@@ -384,13 +450,25 @@ main (int argc, char** argv)
 	allocateMatrices(&arguments);
 	initMatrices(&arguments, &options);
 
-	gettimeofday(&start_time, NULL);
-	calculate(&arguments, &results, &options);
-	gettimeofday(&comp_time, NULL);
+    if(options->method == METH_JACOBI) {
+        gettimeofday(&start_time, NULL);
+		createThreads(&arguments, &options, &threads, &work_lengths);
+		waitForThreads(options->number, &threads);
+		gettimeofday(&comp_time, NULL);+
+	}
+	else {
+		gettimeofday(&start_time, NULL);
+		calculate(&arguments, &results, &options);
+		gettimeofday(&comp_time, NULL);
+	}
 
 	displayStatistics(&arguments, &results, &options);
 	displayMatrix(&arguments, &results, &options);
 
+    if(options->method == METH_JACOBI) {
+        freeThreads(&threads, &work_lengths);
+    }
+    
 	freeMatrices(&arguments);
 
 	return 0;
