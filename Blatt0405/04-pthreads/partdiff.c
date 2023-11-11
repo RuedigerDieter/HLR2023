@@ -466,7 +466,6 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
     int M = (N-1) * (N-1);
     int L = (int) (M / t);
     int R = M - L * t;
-    int pos = 0;
 
     thread_args = (struct thread_arg*) allocateMemory(sizeof(struct thread_arg) * t);
 
@@ -501,7 +500,7 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 
 int calculate_new(struct calculation_arguments* arguments, struct options* options, struct calculation_results* results, pthread_t* threads, struct thread_arg* thread_args)
 {
-	int t = thread_args->thread_num;
+	int t = options->number;
 	int m1 = 0;
 	int m2 = 1;    
 	
@@ -558,9 +557,6 @@ void freeThreads(int t, pthread_t* threads, struct thread_arg* thread_args) {
 	free(threads);
 	free(thread_args[0].m1);
 	free(thread_args[0].m2);
-	for(int i = 0; i < t; i++) {
-		free(&thread_args[i]);
-	}
     free(thread_args);
 }
 
