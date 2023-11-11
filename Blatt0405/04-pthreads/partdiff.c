@@ -470,7 +470,8 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 
 	int poscounter = 0;
 
-	int *m1m2 = (int*) allocateMemory(sizeof(int)*2);
+	int *m1 = (int*) allocateMemory(sizeof(int));
+	int *m2 = (int*) allocateMemory(sizeof(int));
 	double* maxResiduum = (double*) allocateMemory(sizeof(double));
 
 	sem_t *maxResiduum_sem = (sem_t*) allocateMemory(sizeof(sem_t));
@@ -487,8 +488,8 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 		(*thread_args)[i].start_index = poscounter;
 		int work_length = L + has_remainder;
         (*thread_args)[i].work_length = work_length;
-		(*thread_args)[i].m1 = &m1m2[0];
-		(*thread_args)[i].m2 = &m1m2[1];
+		(*thread_args)[i].m1 = m1;
+		(*thread_args)[i].m2 = m2;
 		(*thread_args)[i].maxResiduum = maxResiduum;
 		(*thread_args)[i].maxResiduum_sem = maxResiduum_sem;
 		poscounter += work_length;
