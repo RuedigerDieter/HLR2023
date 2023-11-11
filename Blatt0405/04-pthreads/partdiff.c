@@ -423,8 +423,6 @@ void runThread(void *args)
 
 		if(j == N) { //if next iteration will begin at j=0
 
-			double fpisin_i = 0.0;
-
 			if (options->inf_func == FUNC_FPISIN)
 			{
 				fpisin_i = fpisin * sin(pih * (double)i);
