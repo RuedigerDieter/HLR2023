@@ -418,8 +418,8 @@ void *runThread(void *args)
 	}
 
 	for(int x = start_index; x < start_index + work_length; x++) {
-		int i = x / row_len;
-		int j = x % row_len;
+		int i = (x / row_len) + 1;
+		int j = (x % row_len) + 1;
 
 		if(j == N) { //if next iteration will begin at j=0
 
@@ -429,7 +429,7 @@ void *runThread(void *args)
 			}
 
 		}
-
+		
 		star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
 		if (options->inf_func == FUNC_FPISIN)
