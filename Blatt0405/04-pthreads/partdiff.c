@@ -478,7 +478,7 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 	sem_t *maxResiduum_sem = (sem_t*) allocateMemory(sizeof(sem_t));
 
 	if (sem_init(maxResiduum_sem, 0, 1) != 0) {
-   		print("Semaphore initialization failed.\n");
+   		printf("Semaphore initialization failed.\n");
         return 1;
     }
 
@@ -512,18 +512,18 @@ int calculate_new(struct calculation_arguments* arguments, struct options* optio
 
 		for(int i = 0; i < t; i++) {
 			if (pthread_create(&threads[i], NULL, runThread, (void *)&thread_args[i]) != 0) {
-				print("Error creating thread\n");
+				printf("Error creating thread\n");
 				return 1;
 			}
 		}
 
-		print("created threads successfully!\n");
+		printf("created threads successfully!\n");
 
 		for(int i = 0; i < t; i++) {
 			pthread_join(threads[i], NULL);
 		}
 
-		print("calculation done\n");
+		printf("calculation done\n");
 
 		results->stat_iteration++;
 
