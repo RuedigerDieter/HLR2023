@@ -456,7 +456,7 @@ void *runThread(void *args)
 
 }
 
-int createThreads(struct calculation_arguments* arguments, struct options* options, struct thread_arg* thread_args)
+int createThreads(struct calculation_arguments* arguments, struct options* options, struct thread_arg** thread_args)
 {
     int t = options->number;
     int N = arguments->N;
@@ -465,7 +465,7 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
     int L = (int) (M / t);
     int R = M - L * t;
 
-    thread_args = (struct thread_arg*) allocateMemory(sizeof(struct thread_arg) * t);
+    *thread_args = (struct thread_arg*) allocateMemory(sizeof(struct thread_arg) * t);
 
 	int poscounter = 0;
 
@@ -483,22 +483,22 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 
     for(int i = 0; i < t; i++) {
 		int has_remainder = t < R;
-		thread_args[i].start_index = poscounter;
+		(*thread_args)[i].start_index = poscounter;
 		int work_length = L + has_remainder;
-        thread_args[i].work_length = work_length;
-		thread_args[i].m1 = &m1m2[0];
-		thread_args[i].m2 = &m1m2[1];
-		thread_args[i].maxResiduum = maxResiduum;
-		thread_args[i].maxResiduum_sem = maxResiduum_sem;
+        (*thread_args)[i].work_length = work_length;
+		(*thread_args)[i].m1 = &m1m2[0];
+		(*thread_args)[i].m2 = &m1m2[1];
+		(*thread_args)[i].maxResiduum = maxResiduum;
+		(*thread_args)[i].maxResiduum_sem = maxResiduum_sem;
 		poscounter += work_length;
-		thread_args[i].arguments = arguments;
-		thread_args[i].options = options;
+		(*thread_args)[i].arguments = arguments;
+		(*thread_args)[i].options = options;
     }
 
 	return 0;
 }
 
-int calculate_new(struct options* options, struct calculation_results* results, pthread_t* threads, struct thread_arg* thread_args)
+int calculate_new(struct options* options, struct calculation_results* results, pthread_t** threads, struct thread_arg** thread_args)
 {
 	int t = options->number;
 	int m1 = 0;
@@ -507,10 +507,10 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 	while (options->term_iteration > 0)
 	{
 		
-		*(thread_args[0].maxResiduum) = 0;
+		*((*thread_args)[0].maxResiduum) = 0;
 
 		for(int i = 0; i < t; i++) {
-			if (pthread_create(&threads[i], NULL, runThread, (void *)&thread_args[i]) != 0) {
+			if (pthread_create(&(*threads)[i], NULL, runThread, (void *)&(*thread_args)[i]) != 0) {
 				printf("Error creating thread\n");
 				return 1;
 			}
@@ -519,7 +519,7 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 		printf("created threads successfully!\n");
 
 		for(int i = 0; i < t; i++) {
-			pthread_join(threads[i], NULL);
+			pthread_join((*threads)[i], NULL);
 		}
 
 		printf("calculation done\n");
@@ -535,7 +535,7 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 		/* check for stopping calculation depending on termination method */
 		if (options->termination == TERM_PREC)
 		{
-			if (*(thread_args[0].maxResiduum) < options->term_precision)
+			if (*((*thread_args)[0].maxResiduum) < options->term_precision)
 			{
 				options->term_iteration = 0;
 			}
@@ -551,13 +551,16 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 	return 0;
 }
 
-void freeThreads(pthread_t* threads, struct thread_arg* thread_args) {
-	sem_destroy(thread_args[0].maxResiduum_sem);
-	free(thread_args[0].maxResiduum_sem);
-	free(thread_args[0].maxResiduum);
-	free(threads);
-	free(thread_args[0].m1);
-	free(thread_args[0].m2);
+void freeThreads(int t, pthread_t** threads, struct thread_arg** thread_args) {
+	sem_destroy((*thread_args)[0].maxResiduum_sem);
+	free(thread_args);
+	free((*thread_args)[0].maxResiduum_sem);
+	free((*thread_args)[0].maxResiduum);
+	free((*thread_args)[0].m1);
+	free((*thread_args)[0].m2);
+	for(int i = 0; i < t; i++) {
+		free((*thread_args)[i]);
+	}
     free(thread_args);
 }
 
@@ -601,7 +604,7 @@ main (int argc, char** argv)
 	displayMatrix(&arguments, &results, &options);
 
     if(options.method == METH_JACOBI) {
-        freeThreads(&threads, &thread_args);
+        freeThreads(options.number, &threads, &thread_args);
     }
     
 	freeMatrices(&arguments);
