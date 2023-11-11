@@ -481,8 +481,6 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
         return 1;
     }
 
-	m1m2[1] = 1;
-
     for(int i = 0; i < t; i++) {
 		int has_remainder = t < R;
 		(*thread_args)[i].start_index = poscounter;
