@@ -381,7 +381,7 @@ struct thread_arg{
 	int *m2; 
 };
 
-void runThread(void *args)
+void *runThread(void *args)
 {
 	struct thread_arg *thread_args = (struct thread_arg*) args;
 	int start_index = thread_args->start_index;
@@ -451,6 +451,8 @@ void runThread(void *args)
 		Matrix_Out[i][j] = star;
 
 	}
+
+	return NULL;
 
 }
 
