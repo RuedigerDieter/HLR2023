@@ -373,7 +373,7 @@ struct thread_arg{
 	int thread_num;
 	int start_index;
 	int work_length;
-	double maxResiduum;
+	double* maxResiduum;
 	sem_t* maxResiduum_sem;
 	int *m1;
 	int *m2; 
@@ -390,7 +390,6 @@ void runThread(void *args)
 	int* m2 = thread_args->m2;
 	double star;        /* four times center value minus 4 neigh.b values */
 	double residuum;    /* residuum of current iteration */
-	double maxResiduum = thread_args->maxResiduum; /* maximum residuum value of a slave in iteration */
 
 	int const N = arguments->N;
 	double const h = arguments->h;
@@ -445,7 +444,8 @@ void runThread(void *args)
 			residuum = (residuum < 0) ? -residuum : residuum;
 
 			sem_wait(thread_args->maxResiduum_sem);
-			thread_args->maxResiduum = (residuum < thread_args->maxResiduum) ? thread_args->maxResiduum : residuum;
+			double mr = *(thread_args->maxResiduum);
+			*(thread_args->maxResiduum) = (residuum < mr) ? mr : residuum;
 			sem_post(thread_args->maxResiduum_sem);
 		}
 
@@ -465,13 +465,14 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
     int R = M - L * t;
     int pos = 0;
 
-    thread_args = malloc(sizeof(struct thread_arg) * t);
+    thread_args = (struct thread_arg*) allocateMemory(sizeof(struct thread_arg) * t);
 
 	int poscounter = 0;
 
-	int *m1m2 = malloc(sizeof(int)*2);
+	int *m1m2 = (int*) allocateMemory(sizeof(int)*2);
+	int* maxResiduum = (int*) allocateMemory(sizeof(int))
 
-	sem_t *maxResiduum_sem = (sem_t*) malloc(sizeof(sem_t));;
+	sem_t *maxResiduum_sem = (sem_t*) allocateMemory(sizeof(sem_t));;
 
 	if (sem_init(maxResiduum_sem, 0, 1) != 0) {
         fprintf(stderr, "Semaphore initialization failed.\n");
@@ -488,7 +489,8 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
         thread_args[i].work_length = work_length;
 		thread_args[i].m1 = &m1m2[0];
 		thread_args[i].m2 = &m1m2[1];
-		thread_args[i].maxResiduum_sem = &maxResiduum_sem;
+		thread_args[i].maxResiduum = maxResiduum;
+		thread_args[i].maxResiduum_sem = maxResiduum_sem;
 		poscounter += work_length;
     }
 
@@ -503,6 +505,9 @@ int calculate_new(struct calculation_arguments* arguments, struct options* optio
 	
 	while (term_iteration > 0)
 	{
+
+		*(thread_args[0].maxResiduum) = 0;
+
 		for(int i = 0; i < t; i++) {
 			if (pthread_create(&threads[i], NULL, runThread, (void *)&thread_args[i]) != 0) {
 				fprintf(stderr, "Error creating thread\n");
@@ -529,7 +534,7 @@ int calculate_new(struct calculation_arguments* arguments, struct options* optio
 		/* check for stopping calculation depending on termination method */
 		if (options->termination == TERM_PREC)
 		{
-			if (maxResiduum < options->term_precision)
+			if (*(thread_args[0].maxResiduum) < options->term_precision)
 			{
 				term_iteration = 0;
 			}
@@ -544,12 +549,16 @@ int calculate_new(struct calculation_arguments* arguments, struct options* optio
 	
 }
 
-void freeThreads(pthread_t* threads, struct thread_arg* thread_args) {
+void freeThreads(int t, pthread_t* threads, struct thread_arg* thread_args) {
 	sem_destroy(thread_args[0].maxResiduum_sem);
 	free(thread_args[0].maxResiduum_sem);
+	free(thread_args[0].maxResiduum);
 	free(threads);
 	free(thread_args[0].m1);
 	free(thread_args[0].m2);
+	for(int i = 0; i < t; i++) {
+		free(thread_args[i]);
+	}
     free(thread_args);
 }
 
