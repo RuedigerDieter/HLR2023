@@ -371,6 +371,7 @@ displayMatrix (struct calculation_arguments* arguments, struct calculation_resul
 
 struct thread_arg{
 	int thread_num;
+	int start_index;
 	int work_length;
 };
 
@@ -378,10 +379,97 @@ void runThread(void *args)
 {
 	thread_arg *thread_args = (thread_arg*) args;
 	int thread_num = thread_args->thread_num;
+	int start_index = thread_args->start_index;
 	int work_length = thread_args->work_length;
 
 	/**********************************************/
 
+	int i, j;           /* local variables for loops */
+	int m1 = 0;
+	int m2 = 1;         /* used as indices for old and new matrices */
+	double star;        /* four times center value minus 4 neigh.b values */
+	double residuum;    /* residuum of current iteration */
+	double maxResiduum; /* maximum residuum value of a slave in iteration */
+
+	int const N = arguments->N;
+	double const h = arguments->h;
+
+	double pih = 0.0;
+	double fpisin = 0.0;
+
+	int term_iteration = options->term_iteration;
+
+	if (options->inf_func == FUNC_FPISIN)
+	{
+		pih = PI * h;
+		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
+	}
+
+	int row_len = (N-1);
+
+	while (term_iteration > 0)
+	{
+		double** Matrix_Out = arguments->Matrix[m1];
+		double** Matrix_In  = arguments->Matrix[m2];
+
+		maxResiduum = 0;
+
+		double fpisin_i;
+		for(int x = start_index; x < start_index + work_length; x++){
+			int i = x / row_len;
+			int j = x % row_len;
+
+			if(calculated_j == N) { //if next iteration will begin at j=0
+
+				double fpisin_i = 0.0;
+
+				if (options->inf_func == FUNC_FPISIN)
+				{
+					fpisin_i = fpisin * sin(pih * (double)i);
+				}
+			}
+
+			star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+
+			if (options->inf_func == FUNC_FPISIN)
+			{
+				star += fpisin_i * sin(pih * (double)j);
+			}
+
+			if (options->termination == TERM_PREC || term_iteration == 1)
+			{
+				residuum = Matrix_In[i][j] - star;
+				residuum = (residuum < 0) ? -residuum : residuum;
+				maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+			}
+
+			Matrix_Out[i][j] = star;
+
+			}
+
+		results->stat_iteration++;
+		results->stat_precision = maxResiduum;
+
+		/* exchange m1 and m2 */
+		int ii = m1;
+		m1 = m2;
+		m2 = ii;
+
+		/* check for stopping calculation depending on termination method */
+		if (options->termination == TERM_PREC)
+		{
+			if (maxResiduum < options->term_precision)
+			{
+				term_iteration = 0;
+			}
+		}
+		else if (options->termination == TERM_ITER)
+		{
+			term_iteration--;
+		}
+	}
+
+	results->m = m2;
 }
 
 void createThreads(struct calculation_arguments* arguments, struct options* options, pthread_t* threads, thread_arg* thread_args)
@@ -396,10 +484,15 @@ void createThreads(struct calculation_arguments* arguments, struct options* opti
 
     thread_args = malloc(sizeof(thread_arg) * t);
 
+	int poscounter = 0;
+
     for(int i = 0; i < t; i++) {
 		thread_args[i].thread_num = t;
 		int has_remainder = t < R;
-        thread_args[i].work_length = L + has_remainder;
+		thread_args[i].start_index = poscounter;
+		int work_length = L + has_remainder;
+        thread_args[i].work_length = work_length;
+		poscounter += work_length;
     }
 
 	for(int i = 0; i < t; i++) {
