@@ -1,0 +1,5 @@
+Berechnungszeit:    0.000000 s
+Berechnungsmethode: Jacobi
+Interlines:         512
+Stoerfunktion:      f(x,y)=2pi^2*sin(pi*x)sin(pi*y)
+Terminierung:       Hinreichende Genaugkeit
