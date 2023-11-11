@@ -529,8 +529,8 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 		int ii = m1;
 		m1 = m2;
 		m2 = ii;
-		*(thread_args[0].m1) = m1;
-		*(thread_args[0].m2) = m2;
+		*((*thread_args)[0].m1) = m1;
+		*((*thread_args)[0].m2) = m2;
 
 		/* check for stopping calculation depending on termination method */
 		if (options->termination == TERM_PREC)
@@ -551,16 +551,13 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 	return 0;
 }
 
-void freeThreads(int t, pthread_t** threads, struct thread_arg** thread_args) {
-	sem_destroy((*thread_args)[0].maxResiduum_sem);
-	free(thread_args);
-	free((*thread_args)[0].maxResiduum_sem);
-	free((*thread_args)[0].maxResiduum);
-	free((*thread_args)[0].m1);
-	free((*thread_args)[0].m2);
-	for(int i = 0; i < t; i++) {
-		free((*thread_args)[i]);
-	}
+void freeThreads(int t, pthread_t* threads, struct thread_arg* thread_args) {
+	sem_destroy(thread_args[0].maxResiduum_sem);
+	free(threads);
+	free(thread_args[0].maxResiduum_sem);
+	free(thread_args[0].maxResiduum);
+	free(thread_args[0].m1);
+	free(thread_args[0].m2);
     free(thread_args);
 }
 
@@ -604,7 +601,7 @@ main (int argc, char** argv)
 	displayMatrix(&arguments, &results, &options);
 
     if(options.method == METH_JACOBI) {
-        freeThreads(options.number, &threads, &thread_args);
+        freeThreads(options.number, threads, thread_args);
     }
     
 	freeMatrices(&arguments);
