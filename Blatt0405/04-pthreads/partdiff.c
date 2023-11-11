@@ -494,6 +494,8 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 		thread_args[i].maxResiduum = maxResiduum;
 		thread_args[i].maxResiduum_sem = maxResiduum_sem;
 		poscounter += work_length;
+		thread_args[i].arguments = arguments;
+		thread_args[i].options = options;
     }
 
 }
