@@ -458,7 +458,7 @@ void runThread(void *args)
 
 }
 
-int createThreads(struct calculation_arguments* arguments, struct options* options, pthread_t* threads, struct thread_arg* thread_args)
+int createThreads(struct calculation_arguments* arguments, struct options* options, struct thread_arg* thread_args)
 {
     int t = options->number;
     int N = arguments->N;
@@ -472,7 +472,7 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 	int poscounter = 0;
 
 	int *m1m2 = (int*) allocateMemory(sizeof(int)*2);
-	int* maxResiduum = (int*) allocateMemory(sizeof(int));
+	double* maxResiduum = (double*) allocateMemory(sizeof(double));
 
 	sem_t *maxResiduum_sem = (sem_t*) allocateMemory(sizeof(sem_t));
 
@@ -498,9 +498,10 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 		thread_args[i].options = options;
     }
 
+	return 0;
 }
 
-int calculate_new(struct calculation_arguments* arguments, struct options* options, struct calculation_results* results, pthread_t* threads, struct thread_arg* thread_args)
+int calculate_new(struct options* options, struct calculation_results* results, pthread_t* threads, struct thread_arg* thread_args)
 {
 	int t = options->number;
 	int m1 = 0;
@@ -550,6 +551,7 @@ int calculate_new(struct calculation_arguments* arguments, struct options* optio
 
 	results->m = m2;
 	
+	return 0;
 }
 
 void freeThreads(int t, pthread_t* threads, struct thread_arg* thread_args) {
@@ -587,9 +589,9 @@ main (int argc, char** argv)
 	initMatrices(&arguments, &options);
 
     if(options.method == METH_JACOBI) {
-		createThreads(&arguments, &options, &threads, &thread_args);
+		createThreads(&arguments, &options, &thread_args);
         gettimeofday(&start_time, NULL);
-		calculate_new(&arguments, &options, &results, &threads, &thread_args);
+		calculate_new(&options, &results, &threads, &thread_args);
 		gettimeofday(&comp_time, NULL);
 	}
 	else {
