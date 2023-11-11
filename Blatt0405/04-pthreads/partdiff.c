@@ -456,7 +456,7 @@ void *runThread(void *args)
 
 }
 
-int createThreads(struct calculation_arguments* arguments, struct options* options, struct thread_arg** thread_args)
+int createThreads(struct calculation_arguments* arguments, struct options* options, pthread_t** threads, struct thread_arg** thread_args)
 {
     int t = options->number;
     int N = arguments->N;
@@ -465,6 +465,7 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
     int L = (int) (M / t);
     int R = M - L * t;
 
+	*threads = (pthread_t*) allocateMemory(sizeof(pthread_t) * t);
     *thread_args = (struct thread_arg*) allocateMemory(sizeof(struct thread_arg) * t);
 
 	int poscounter = 0;
@@ -586,7 +587,7 @@ main (int argc, char** argv)
 	initMatrices(&arguments, &options);
 
     if(options.method == METH_JACOBI) {
-		createThreads(&arguments, &options, &thread_args);
+		createThreads(&arguments, &options, &threads, &thread_args);
         gettimeofday(&start_time, NULL);
 		calculate_new(&options, &results, &threads, &thread_args);
 		gettimeofday(&comp_time, NULL);
