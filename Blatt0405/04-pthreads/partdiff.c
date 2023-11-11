@@ -183,7 +183,7 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 /* ************************************************************************ */
 static
 void
-calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+calculate_old (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
 {
 	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
@@ -373,23 +373,24 @@ struct thread_arg{
 	int thread_num;
 	int start_index;
 	int work_length;
+	double maxResiduum;
+	sem_t* maxResiduum_sem;
+	int *m1;
+	int *m2; 
 };
 
 void runThread(void *args)
 {
-	thread_arg *thread_args = (thread_arg*) args;
+	struct thread_arg *thread_args = (struct thread_arg*) args;
 	int thread_num = thread_args->thread_num;
 	int start_index = thread_args->start_index;
 	int work_length = thread_args->work_length;
-
-	/**********************************************/
-
-	int i, j;           /* local variables for loops */
-	int m1 = 0;
-	int m2 = 1;         /* used as indices for old and new matrices */
+	
+	int* m1 = thread_args->m1;
+	int* m2 = thread_args->m2;
 	double star;        /* four times center value minus 4 neigh.b values */
 	double residuum;    /* residuum of current iteration */
-	double maxResiduum; /* maximum residuum value of a slave in iteration */
+	double maxResiduum = thread_args->maxResiduum; /* maximum residuum value of a slave in iteration */
 
 	int const N = arguments->N;
 	double const h = arguments->h;
@@ -406,54 +407,124 @@ void runThread(void *args)
 	}
 
 	int row_len = (N-1);
+	double** Matrix_Out = arguments->Matrix[*m1];
+	double** Matrix_In  = arguments->Matrix[*m2];
 
-	while (term_iteration > 0)
+	double fpisin_i = 0.0;
+
+	if (options->inf_func == FUNC_FPISIN)
 	{
-		double** Matrix_Out = arguments->Matrix[m1];
-		double** Matrix_In  = arguments->Matrix[m2];
+		fpisin_i = fpisin * sin(pih * (double)i);
+	}
 
-		maxResiduum = 0;
+	for(int x = start_index; x < start_index + work_length; x++) {
+		int i = x / row_len;
+		int j = x % row_len;
 
-		double fpisin_i;
-		for(int x = start_index; x < start_index + work_length; x++){
-			int i = x / row_len;
-			int j = x % row_len;
+		if(j == N) { //if next iteration will begin at j=0
 
-			if(calculated_j == N) { //if next iteration will begin at j=0
-
-				double fpisin_i = 0.0;
-
-				if (options->inf_func == FUNC_FPISIN)
-				{
-					fpisin_i = fpisin * sin(pih * (double)i);
-				}
-			}
-
-			star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+			double fpisin_i = 0.0;
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
-				star += fpisin_i * sin(pih * (double)j);
+				fpisin_i = fpisin * sin(pih * (double)i);
 			}
 
-			if (options->termination == TERM_PREC || term_iteration == 1)
-			{
-				residuum = Matrix_In[i][j] - star;
-				residuum = (residuum < 0) ? -residuum : residuum;
-				maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
-			}
+		}
 
-			Matrix_Out[i][j] = star;
+		star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
+		if (options->inf_func == FUNC_FPISIN)
+		{
+			star += fpisin_i * sin(pih * (double)j);
+		}
+
+		if (options->termination == TERM_PREC || term_iteration == 1)
+		{
+			residuum = Matrix_In[i][j] - star;
+			residuum = (residuum < 0) ? -residuum : residuum;
+
+			sem_wait(thread_args->maxResiduum_sem);
+			thread_args->maxResiduum = (residuum < thread_args->maxResiduum) ? thread_args->maxResiduum : residuum;
+			sem_post(thread_args->maxResiduum_sem);
+		}
+
+		Matrix_Out[i][j] = star;
+
+	}
+
+}
+
+int createThreads(struct calculation_arguments* arguments, struct options* options, pthread_t* threads, struct thread_arg* thread_args)
+{
+    int t = options->number;
+    int N = arguments->N;
+    
+    int M = (N-1) * (N-1);
+    int L = (int) (M / t);
+    int R = M - L * t;
+    int pos = 0;
+
+    thread_args = malloc(sizeof(struct thread_arg) * t);
+
+	int poscounter = 0;
+
+	int *m1m2 = malloc(sizeof(int)*2);
+
+	sem_t *maxResiduum_sem = (sem_t*) malloc(sizeof(sem_t));;
+
+	if (sem_init(maxResiduum_sem, 0, 1) != 0) {
+        fprintf(stderr, "Semaphore initialization failed.\n");
+        return 1;
+    }
+
+	m1m2[1] = 1;
+
+    for(int i = 0; i < t; i++) {
+		thread_args[i].thread_num = t;
+		int has_remainder = t < R;
+		thread_args[i].start_index = poscounter;
+		int work_length = L + has_remainder;
+        thread_args[i].work_length = work_length;
+		thread_args[i].m1 = &m1m2[0];
+		thread_args[i].m2 = &m1m2[1];
+		thread_args[i].maxResiduum_sem = &maxResiduum_sem;
+		poscounter += work_length;
+    }
+
+}
+
+int calculate_new(struct calculation_arguments* arguments, struct options* options, pthread_t* threads, struct thread_arg* thread_args)
+{
+	int term_iteration = options->term_iteration;
+	int t = thread_args->thread_num;
+	int m1 = 0;
+	int m2 = 1;    
+	
+	while (term_iteration > 0)
+	{
+		for(int i = 0; i < t; i++) {
+			if (pthread_create(&threads[i], NULL, runThread, (void *)&thread_args[i]) != 0) {
+				fprintf(stderr, "Error creating thread\n");
+				return 1;
 			}
+		}
+
+		print("created threads successfully!\n");
+
+		for(int i = 0; i < t; i++) {
+			pthread_join(thread_id[i], NULL);
+		}
+
+		print("calculation done\n");
 
 		results->stat_iteration++;
-		results->stat_precision = maxResiduum;
 
-		/* exchange m1 and m2 */
 		int ii = m1;
 		m1 = m2;
 		m2 = ii;
+		*(thread_args[0].m1) = m1;
+		*(thread_args[0].m2) = m2;
 
 		/* check for stopping calculation depending on termination method */
 		if (options->termination == TERM_PREC)
@@ -470,53 +541,16 @@ void runThread(void *args)
 	}
 
 	results->m = m2;
-}
-
-void createThreads(struct calculation_arguments* arguments, struct options* options, pthread_t* threads, thread_arg* thread_args)
-{
-    int t = options->number;
-    int N = arguments->N;
-    
-    int M = (N-1) * (N-1);
-    int L = (int) (M / t);
-    int R = M - L * t;
-    int pos = 0;
-
-    thread_args = malloc(sizeof(thread_arg) * t);
-
-	int poscounter = 0;
-
-    for(int i = 0; i < t; i++) {
-		thread_args[i].thread_num = t;
-		int has_remainder = t < R;
-		thread_args[i].start_index = poscounter;
-		int work_length = L + has_remainder;
-        thread_args[i].work_length = work_length;
-		poscounter += work_length;
-    }
-
-	for(int i = 0; i < t; i++) {
-		if (pthread_create(&threads[i], NULL, runThread, (void *)&thread_args[i]) != 0) {
-        	fprintf(stderr, "Error creating thread\n");
-        	return 1;
-    	}
-	}
-
-	print("created threads successfully!");
-
-}
-
-void freeThreads(pthread_t* threads, int* work_lengths) {
-    free(threads);
-    free(work_lengths);
-}
-
-void waitForThreads(int t, pthread_t* threads) {
-
-	for(int i = 0; i < t; i++) {
-		pthread_join(thread_id[i], NULL);
-	}
 	
+}
+
+void freeThreads(pthread_t* threads, struct thread_arg* thread_args) {
+	sem_destroy(thread_args[0].maxResiduum_sem);
+	free(thread_args[0].maxResiduum_sem);
+	free(threads);
+	free(thread_args[0].m1);
+	free(thread_args[0].m2);
+    free(thread_args);
 }
 
 /* ************************************************************************ */
@@ -532,7 +566,7 @@ main (int argc, char** argv)
 	/**
 	 * fuer t threads jeweils die laenge an zu bearbeitenden Positionen
 	*/
-    int *work_lengths;
+    struct thread_arg *thread_args;
 
     pthread_t *threads;
 
@@ -544,14 +578,14 @@ main (int argc, char** argv)
 	initMatrices(&arguments, &options);
 
     if(options->method == METH_JACOBI) {
+		createThreads(&arguments, &options, &threads, &thread_args);
         gettimeofday(&start_time, NULL);
-		createThreads(&arguments, &options, &threads, &work_lengths);
-		waitForThreads(options->number, &threads);
-		gettimeofday(&comp_time, NULL);+
+		calculate_new(&arguments, &options, &threads, &thread_args);
+		gettimeofday(&comp_time, NULL);
 	}
 	else {
 		gettimeofday(&start_time, NULL);
-		calculate(&arguments, &results, &options);
+		calculate_old(&arguments, &results, &options);
 		gettimeofday(&comp_time, NULL);
 	}
 
@@ -559,7 +593,7 @@ main (int argc, char** argv)
 	displayMatrix(&arguments, &results, &options);
 
     if(options->method == METH_JACOBI) {
-        freeThreads(&threads, &work_lengths);
+        freeThreads(&threads, &thread_args);
     }
     
 	freeMatrices(&arguments);
