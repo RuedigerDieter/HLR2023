@@ -371,7 +371,6 @@ displayMatrix (struct calculation_arguments* arguments, struct calculation_resul
 }
 
 struct thread_arg{
-	int thread_num;
 	int start_index;
 	int work_length;
 	double* maxResiduum;
@@ -385,7 +384,6 @@ struct thread_arg{
 void runThread(void *args)
 {
 	struct thread_arg *thread_args = (struct thread_arg*) args;
-	int thread_num = thread_args->thread_num;
 	int start_index = thread_args->start_index;
 	int work_length = thread_args->work_length;
 	struct calculation_arguments* arguments = thread_args->arguments;
@@ -484,7 +482,6 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 	m1m2[1] = 1;
 
     for(int i = 0; i < t; i++) {
-		thread_args[i].thread_num = t;
 		int has_remainder = t < R;
 		thread_args[i].start_index = poscounter;
 		int work_length = L + has_remainder;
@@ -554,7 +551,7 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 	return 0;
 }
 
-void freeThreads(int t, pthread_t* threads, struct thread_arg* thread_args) {
+void freeThreads(pthread_t* threads, struct thread_arg* thread_args) {
 	sem_destroy(thread_args[0].maxResiduum_sem);
 	free(thread_args[0].maxResiduum_sem);
 	free(thread_args[0].maxResiduum);
@@ -604,7 +601,7 @@ main (int argc, char** argv)
 	displayMatrix(&arguments, &results, &options);
 
     if(options.method == METH_JACOBI) {
-        freeThreads(options.number, &threads, &thread_args);
+        freeThreads(&threads, &thread_args);
     }
     
 	freeMatrices(&arguments);
