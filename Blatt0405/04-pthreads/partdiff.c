@@ -455,7 +455,9 @@ void *runThread(void *args)
 
 			}
 
+
 			*iteration_done = *iteration_done + 1;
+			printf("iteration wurde erhoeht auf %d\n", *iteration_done);
 
 		}
 
