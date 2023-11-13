@@ -390,7 +390,7 @@ void *runThread(void *args)
 	int *go = &(thread_args->go);
 
 	while(1) {
-		//printf("%p\n", (void*) go);
+		
 		if(*go) {
 			*go = 0;
 
@@ -401,6 +401,8 @@ void *runThread(void *args)
 			struct calculation_arguments* arguments = thread_args->arguments;
 			struct options* options = thread_args->options;
 			
+			printf("running at %d\n", start_index);
+
 			int* m1 = thread_args->m1;
 			int* m2 = thread_args->m2;
 			double star;        /* four times center value minus 4 neigh.b values */
@@ -563,6 +565,8 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 			options->term_iteration--;
 		}
 	}
+
+	print("cancelling threads\n");
 
 	for(int i = 0; i < t; i++) {
 		if(pthread_cancel((*threads)[i]) != 0) {
