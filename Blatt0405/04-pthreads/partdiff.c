@@ -371,13 +371,13 @@ displayMatrix (struct calculation_arguments* arguments, struct calculation_resul
 }
 
 struct thread_arg{
-	struct calculation_arguments* arguments;
-	struct options* options;
 	int start_index;
 	int work_length;
+	int go; //set to 1 if 
 	double* maxResiduum;
 	sem_t* maxResiduum_sem;
-	int *go; //set to 1 if 
+	struct calculation_arguments* arguments;
+	struct options* options;
 	int *m1;
 	int *m2; 
 	int *iteration_done; //counts up to #threads to ensure whether iteration is over or not
@@ -387,7 +387,7 @@ void *runThread(void *args)
 {
 	struct thread_arg *thread_args = (struct thread_arg*) args;
 
-	int *go = thread_args->go;
+	int *go = &(thread_args->go);
 
 	while(1) {
 		
@@ -455,6 +455,7 @@ void *runThread(void *args)
 
 			}
 
+
 			*iteration_done = *iteration_done + 1;
 			printf("iteration wurde erhoeht auf %d\n", *iteration_done);
 
@@ -498,8 +499,7 @@ int initThreads(struct calculation_arguments* arguments, struct options* options
 		(*thread_args)[i].start_index = poscounter;
 		int work_length = L + has_remainder;
         (*thread_args)[i].work_length = work_length;
-		(*thread_args)[i].go = (int*) allocateMemory(sizeof(int));
-		*((*thread_args)[i].go) = 0;
+		(*thread_args)[i].go = 0;
 		(*thread_args)[i].m1 = m1;
 		(*thread_args)[i].m2 = m2;
 		(*thread_args)[i].maxResiduum = maxResiduum;
@@ -532,7 +532,7 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 		*((*thread_args)[0].maxResiduum) = 0;
 
 		for(int i = 0; i < t; i++) {
-			*((*thread_args)[i].go) = 1;
+			(*thread_args)[i].go = 1;
 			printf("%d started\n", i);
 		}
 
@@ -589,9 +589,6 @@ void freeThreads(pthread_t* threads, struct thread_arg* thread_args) {
 	free(thread_args[0].m1);
 	free(thread_args[0].m2);
 	free(thread_args[0].iteration_done);
-	for(int i = 0; i < (int) thread_args[0].options->number; i++){
-		free(thread_args[i].go);
-	}
     free(thread_args);
 }
 
