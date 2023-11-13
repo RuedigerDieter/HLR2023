@@ -589,7 +589,7 @@ void freeThreads(pthread_t* threads, struct thread_arg* thread_args) {
 	free(thread_args[0].m1);
 	free(thread_args[0].m2);
 	free(thread_args[0].iteration_done);
-	for(int i = 0; i < thread_args[0].options->number; i++){
+	for(int i = 0; i < (int) thread_args[0].options->number; i++){
 		free(thread_args[i].go);
 	}
     free(thread_args);
