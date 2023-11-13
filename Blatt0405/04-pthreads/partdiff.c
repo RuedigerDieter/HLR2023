@@ -566,7 +566,7 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 		}
 	}
 
-	print("cancelling threads\n");
+	printf("cancelling threads\n");
 
 	for(int i = 0; i < t; i++) {
 		if(pthread_cancel((*threads)[i]) != 0) {
