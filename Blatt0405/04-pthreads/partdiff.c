@@ -393,6 +393,8 @@ void *runThread(void *args)
 		if(*go) {
 			*go = 0;
 
+			printf("run\n");
+
 			int *iteration_done = thread_args->iteration_done;
 
 			int start_index = thread_args->start_index;
