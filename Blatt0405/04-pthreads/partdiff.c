@@ -502,6 +502,7 @@ int initThreads(struct calculation_arguments* arguments, struct options* options
 		(*thread_args)[i].maxResiduum = maxResiduum;
 		(*thread_args)[i].maxResiduum_sem = maxResiduum_sem;
 		(*thread_args)[i].iteration_done = iteration_done;
+		print("%p\n", (void*) (*thread_args)[i].iteration_done);
 		(*thread_args)[i].arguments = arguments;
 		(*thread_args)[i].options = options;
 		poscounter += work_length;
@@ -534,7 +535,6 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 		}
 
 		while(1) {
-			printf("%d\n", *iteration_done);
 			if(*iteration_done == t) {
 				*iteration_done = 0;
 				break;
