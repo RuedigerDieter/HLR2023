@@ -499,6 +499,7 @@ int initThreads(struct calculation_arguments* arguments, struct options* options
 		int work_length = L + has_remainder;
         (*thread_args)[i].work_length = work_length;
 		(*thread_args)[i].go = (int*) allocateMemory(sizeof(int));
+		*((*thread_args)[i].go) = 0;
 		(*thread_args)[i].m1 = m1;
 		(*thread_args)[i].m2 = m2;
 		(*thread_args)[i].maxResiduum = maxResiduum;
