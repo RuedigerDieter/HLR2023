@@ -203,6 +203,10 @@ void t_calculate(void* args)
 		{
 			for (int i = t_args->position; i++; i < (t_args->position + t_args->chunksize)) // TODO evtl. <= ?
 			{
+				if(i % t_args->t_data->N == 0 
+				|| i % t_args->t_data->N == t_args->t_data->N - 1) 
+				continue; // Ignoriere Randzellen
+						
 			// TODO calculate
 			// TODO ignore borders
 			}
@@ -248,11 +252,12 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		t_data->threads = malloc(sizeof(pthread_t) * options->number);	// Array für die Threads 
 		
 		t_data->N = N;
+		int M = (N - 1) * (N - 1);				// Anzahl der Zellen
 
 		t_args = malloc(sizeof(T_args) * options->number);
 
-		int cpt = N * N / options->number;			// Cells pro Thread
-		int cpt_rest = (N * N) % options->number;	// Rest Cells pro Thread
+		int cpt = M / options->number;			// Cells pro Thread
+		int cpt_rest = M % options->number;	// Rest Cells pro Thread
 
 		int position;
 
