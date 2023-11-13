@@ -390,10 +390,9 @@ void *runThread(void *args)
 	int *go = &(thread_args->go);
 
 	while(1) {
+		printf("%p\n", (void*) go);
 		if(*go) {
 			*go = 0;
-
-			printf("%p\n", (void*) go);
 
 			int *iteration_done = thread_args->iteration_done;
 
