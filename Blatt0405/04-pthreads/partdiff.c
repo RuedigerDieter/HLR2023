@@ -186,6 +186,8 @@ struct t_data {
 	struct calculation_arguments* arguments;
 	struct calculation_results* results;
 	struct options* options;
+	double** Matrix_In;
+	double** Matrix_Out;
 };
 
 typedef struct  {
@@ -196,7 +198,11 @@ typedef struct  {
 
 void t_calculate(void* args) 
 {
+	int pos_r, pos_l, pos_u, pos_d; 		//Positionen für den Stern
+	int star = 0; 
 	T_args* t_args = (T_args*) args;
+	double** Matrix_In = t_args->t_data->Matrix_In;
+	double** Matrix_Out = t_args->t_data->Matrix_Out;
 	while (1)
 	{
 		if (!t_args->t_data->lock)
@@ -206,9 +212,30 @@ void t_calculate(void* args)
 				if(i % t_args->t_data->N == 0 
 				|| i % t_args->t_data->N == t_args->t_data->N - 1) 
 				continue; // Ignoriere Randzellen
-						
+
 			// TODO calculate
-			// TODO ignore borders
+				pos_r = i + 1;
+				pos_l = i - 1;
+				pos_u = i - t_args->t_data->N;
+				pos_d = i + t_args->t_data->N;
+
+				star = .25 * (*Matrix_In[pos_r] + *Matrix_In[pos_l] + *Matrix_In[pos_u] + *Matrix_In[pos_d]);
+
+
+				if (t_args->t_data->options->inf_func == FUNC_FPISIN)
+				{
+					star += fpisin_i * sin(pih * (double)j);
+				}
+
+				if (t_args->t_data->options->termination == TERM_PREC || term_iteration == 1)
+				{
+					residuum = Matrix_In[i][j] - star;
+					residuum = (residuum < 0) ? -residuum : residuum;
+					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+				}
+
+				Matrix_Out[i][j] = star;
+
 			}
 			break; 
 		}
