@@ -387,12 +387,10 @@ void *runThread(void *args)
 {
 	struct thread_arg *thread_args = (struct thread_arg*) args;
 
-	int *go = &(thread_args->go);
-
 	while(1) {
 		
-		if((*go) == 1) {
-			*go = 0;
+		if(thread_args->go == 1) {
+			thread_args->go = 0;
 
 			int *iteration_done = thread_args->iteration_done;
 
