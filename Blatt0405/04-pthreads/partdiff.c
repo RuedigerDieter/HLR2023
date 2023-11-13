@@ -499,7 +499,7 @@ int initThreads(struct calculation_arguments* arguments, struct options* options
 		(*thread_args)[i].start_index = poscounter;
 		int work_length = L + has_remainder;
         (*thread_args)[i].work_length = work_length;
-		(*thread_args)[i].go = (int*) allocateMemory(sizeof(int));;
+		(*thread_args)[i].go = (int*) allocateMemory(sizeof(int));
 		(*thread_args)[i].m1 = m1;
 		(*thread_args)[i].m2 = m2;
 		(*thread_args)[i].maxResiduum = maxResiduum;
@@ -532,7 +532,7 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 		*((*thread_args)[0].maxResiduum) = 0;
 
 		for(int i = 0; i < t; i++) {
-			*((*thread_args)[0].go) = 1
+			*((*thread_args)[0].go) = 1;
 			printf("%d started\n", i);
 		}
 
