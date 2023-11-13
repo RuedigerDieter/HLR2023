@@ -455,7 +455,6 @@ void *runThread(void *args)
 
 			}
 
-
 			*iteration_done = *iteration_done + 1;
 			printf("iteration wurde erhoeht auf %d\n", *iteration_done);
 
@@ -532,7 +531,7 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 		*((*thread_args)[0].maxResiduum) = 0;
 
 		for(int i = 0; i < t; i++) {
-			*((*thread_args)[0].go) = 1;
+			*((*thread_args)[i].go) = 1;
 			printf("%d started\n", i);
 		}
 
