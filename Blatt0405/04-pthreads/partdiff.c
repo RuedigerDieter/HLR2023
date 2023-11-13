@@ -508,7 +508,7 @@ int initThreads(struct calculation_arguments* arguments, struct options* options
 		poscounter += work_length;
 
 		if (pthread_create(&(*threads)[i], NULL, runThread, (void *)&(*thread_args)[i]) != 0) {
-			printf("Error creating thread\n");
+			printf("error creating thread\n");
 			return 1;
 		}
     }
