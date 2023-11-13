@@ -530,6 +530,7 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 
 		for(int i = 0; i < t; i++) {
 			(*thread_args)[i].go = 1;
+			printf("%d started\n", i);
 		}
 
 		while(1) {
