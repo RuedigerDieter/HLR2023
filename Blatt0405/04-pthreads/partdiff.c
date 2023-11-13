@@ -400,8 +400,6 @@ void *runThread(void *args)
 			int work_length = thread_args->work_length;
 			struct calculation_arguments* arguments = thread_args->arguments;
 			struct options* options = thread_args->options;
-			
-			printf("running at %d\n", start_index);
 
 			int* m1 = thread_args->m1;
 			int* m2 = thread_args->m2;
@@ -536,6 +534,7 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 		}
 
 		while(1) {
+			printf("%d\n", *iteration_done);
 			if(*iteration_done == t) {
 				*iteration_done = 0;
 				break;
