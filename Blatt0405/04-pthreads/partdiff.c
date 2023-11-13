@@ -393,7 +393,7 @@ void *runThread(void *args)
 		if(*go) {
 			*go = 0;
 
-			printf("run\n");
+			printf("%p\n", (void*) go);
 
 			int *iteration_done = thread_args->iteration_done;
 
