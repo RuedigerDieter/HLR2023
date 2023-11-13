@@ -387,7 +387,7 @@ void *runThread(void *args)
 {
 	struct thread_arg *thread_args = (struct thread_arg*) args;
 
-	int *go = &(thread_arg->go);
+	int *go = &(thread_args->go);
 
 	while(1) {
 		if(*go) {
@@ -479,8 +479,7 @@ int initThreads(struct calculation_arguments* arguments, struct options* options
 
 	int *m1 = (int*) allocateMemory(sizeof(int));
 	int *m2 = (int*) allocateMemory(sizeof(int));
-
-	int *iteration_done (int*) allocateMemory(sizeof(int));
+	int *iteration_done = (int*) allocateMemory(sizeof(int));
 
 	double* maxResiduum = (double*) allocateMemory(sizeof(double));
 
