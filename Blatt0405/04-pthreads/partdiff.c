@@ -373,90 +373,97 @@ displayMatrix (struct calculation_arguments* arguments, struct calculation_resul
 struct thread_arg{
 	int start_index;
 	int work_length;
+	int go; //set to 1 if 
 	double* maxResiduum;
 	sem_t* maxResiduum_sem;
 	struct calculation_arguments* arguments;
 	struct options* options;
 	int *m1;
 	int *m2; 
+	int *iteration_done; //counts up to #threads to ensure whether iteration is over or not
 };
 
 void *runThread(void *args)
 {
 	struct thread_arg *thread_args = (struct thread_arg*) args;
-	int start_index = thread_args->start_index;
-	int work_length = thread_args->work_length;
-	struct calculation_arguments* arguments = thread_args->arguments;
-	struct options* options = thread_args->options;
-	
-	int* m1 = thread_args->m1;
-	int* m2 = thread_args->m2;
-	double star;        /* four times center value minus 4 neigh.b values */
-	double residuum;    /* residuum of current iteration */
 
-	int const N = arguments->N;
-	double const h = arguments->h;
+	int *go = &(thread_arg->go);
 
-	double pih = 0.0;
-	double fpisin = 0.0;
+	while(1) {
+		if(*go) {
+			*go = 0;
 
-	if (options->inf_func == FUNC_FPISIN)
-	{
-		pih = PI * h;
-		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
-	}
+			int *iteration_done = thread_args->iteration_done;
 
-	int row_len = (N-1);
-	double** Matrix_Out = arguments->Matrix[*m1];
-	double** Matrix_In  = arguments->Matrix[*m2];
+			int start_index = thread_args->start_index;
+			int work_length = thread_args->work_length;
+			struct calculation_arguments* arguments = thread_args->arguments;
+			struct options* options = thread_args->options;
+			
+			int* m1 = thread_args->m1;
+			int* m2 = thread_args->m2;
+			double star;        /* four times center value minus 4 neigh.b values */
+			double residuum;    /* residuum of current iteration */
 
-	double fpisin_i = 0.0;
+			int const N = arguments->N;
+			double const h = arguments->h;
 
-	if (options->inf_func == FUNC_FPISIN)
-	{
-		fpisin_i = fpisin * sin(0);
-	}
-
-	for(int x = start_index; x < start_index + work_length; x++) {
-		int i = (x / row_len) + 1;
-		int j = (x % row_len) + 1;
-
-		if(j == N) { //if next iteration will begin at j=0
+			double pih = 0.0;
+			double fpisin = 0.0;
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
-				fpisin_i = fpisin * sin(pih * (double)i);
+				pih = PI * h;
+				fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 			}
 
+			int row_len = (N-1);
+			double** Matrix_Out = arguments->Matrix[*m1];
+			double** Matrix_In  = arguments->Matrix[*m2];
+
+			double fpisin_i = 0.0;
+
+			for(int x = start_index; x < start_index + work_length; x++) {
+				int i = (x / row_len) + 1;
+				int j = (x % row_len) + 1;
+
+				if (options->inf_func == FUNC_FPISIN)
+				{
+					fpisin_i = fpisin * sin(pih * (double)i);
+				}
+				
+				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+
+				if (options->inf_func == FUNC_FPISIN)
+				{
+					star += fpisin_i * sin(pih * (double)j);
+				}
+
+				if (options->termination == TERM_PREC || options->term_iteration == 1)
+				{
+					residuum = Matrix_In[i][j] - star;
+					residuum = (residuum < 0) ? -residuum : residuum;
+
+					sem_wait(thread_args->maxResiduum_sem);
+					double mr = *(thread_args->maxResiduum);
+					*(thread_args->maxResiduum) = (residuum < mr) ? mr : residuum;
+					sem_post(thread_args->maxResiduum_sem);
+				}
+
+				Matrix_Out[i][j] = star;
+
+			}
+
+			++(*iteration_done);
+
 		}
-		
-		star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
-
-		if (options->inf_func == FUNC_FPISIN)
-		{
-			star += fpisin_i * sin(pih * (double)j);
-		}
-
-		if (options->termination == TERM_PREC || options->term_iteration == 1)
-		{
-			residuum = Matrix_In[i][j] - star;
-			residuum = (residuum < 0) ? -residuum : residuum;
-
-			sem_wait(thread_args->maxResiduum_sem);
-			double mr = *(thread_args->maxResiduum);
-			*(thread_args->maxResiduum) = (residuum < mr) ? mr : residuum;
-			sem_post(thread_args->maxResiduum_sem);
-		}
-
-		Matrix_Out[i][j] = star;
-
 	}
 
 	return NULL;
 
 }
 
-int createThreads(struct calculation_arguments* arguments, struct options* options, pthread_t** threads, struct thread_arg** thread_args)
+int initThreads(struct calculation_arguments* arguments, struct options* options, pthread_t** threads, struct thread_arg** thread_args)
 {
     int t = options->number;
     int N = arguments->N;
@@ -472,6 +479,9 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 
 	int *m1 = (int*) allocateMemory(sizeof(int));
 	int *m2 = (int*) allocateMemory(sizeof(int));
+
+	int *iteration_done (int*) allocateMemory(sizeof(int));
+
 	double* maxResiduum = (double*) allocateMemory(sizeof(double));
 
 	sem_t *maxResiduum_sem = (sem_t*) allocateMemory(sizeof(sem_t));
@@ -486,14 +496,23 @@ int createThreads(struct calculation_arguments* arguments, struct options* optio
 		(*thread_args)[i].start_index = poscounter;
 		int work_length = L + has_remainder;
         (*thread_args)[i].work_length = work_length;
+		(*thread_args)[i].go = 0;
 		(*thread_args)[i].m1 = m1;
 		(*thread_args)[i].m2 = m2;
 		(*thread_args)[i].maxResiduum = maxResiduum;
 		(*thread_args)[i].maxResiduum_sem = maxResiduum_sem;
-		poscounter += work_length;
+		(*thread_args)[i].iteration_done = iteration_done;
 		(*thread_args)[i].arguments = arguments;
 		(*thread_args)[i].options = options;
+		poscounter += work_length;
+
+		if (pthread_create(&(*threads)[i], NULL, runThread, (void *)&(*thread_args)[i]) != 0) {
+			printf("Error creating thread\n");
+			return 1;
+		}
     }
+
+	printf("created threads successfully!\n");
 
 	return 0;
 }
@@ -502,24 +521,22 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 {
 	int t = options->number;
 	int m1 = 0;
-	int m2 = 1;    
+	int m2 = 1;  
+	int *iteration_done = (*thread_args)[0].iteration_done;  
 	
 	while (options->term_iteration > 0)
 	{
-		
 		*((*thread_args)[0].maxResiduum) = 0;
 
 		for(int i = 0; i < t; i++) {
-			if (pthread_create(&(*threads)[i], NULL, runThread, (void *)&(*thread_args)[i]) != 0) {
-				printf("Error creating thread\n");
-				return 1;
-			}
+			(*thread_args)[i].go = 1;
 		}
 
-		printf("created threads successfully!\n");
-
-		for(int i = 0; i < t; i++) {
-			pthread_join((*threads)[i], NULL);
+		while(1) {
+			if(*iteration_done == t) {
+				*iteration_done = 0;
+				break;
+			}
 		}
 
 		printf("calculation done\n");
@@ -546,6 +563,13 @@ int calculate_new(struct options* options, struct calculation_results* results, 
 		}
 	}
 
+	for(int i = 0; i < t; i++) {
+		if(pthread_cancel((*threads)[i]) != 0) {
+			printf("Error canceling thread\n");
+			return 1;
+		}
+	}
+
 	results->m = m2;
 	
 	return 0;
@@ -558,6 +582,7 @@ void freeThreads(pthread_t* threads, struct thread_arg* thread_args) {
 	free(thread_args[0].maxResiduum);
 	free(thread_args[0].m1);
 	free(thread_args[0].m2);
+	free(thread_args[0].iteration_done);
     free(thread_args);
 }
 
@@ -586,7 +611,7 @@ main (int argc, char** argv)
 	initMatrices(&arguments, &options);
 
     if(options.method == METH_JACOBI) {
-		createThreads(&arguments, &options, &threads, &thread_args);
+		initThreads(&arguments, &options, &threads, &thread_args);
         gettimeofday(&start_time, NULL);
 		calculate_new(&options, &results, &threads, &thread_args);
 		gettimeofday(&comp_time, NULL);
