@@ -391,7 +391,7 @@ void *runThread(void *args)
 
 	while(1) {
 		
-		if(*go) {
+		if((*go) == 1) {
 			*go = 0;
 
 			int *iteration_done = thread_args->iteration_done;
@@ -458,7 +458,7 @@ void *runThread(void *args)
 			*iteration_done = *iteration_done + 1;
 
 		}
-		
+
 	}
 
 	return NULL;
