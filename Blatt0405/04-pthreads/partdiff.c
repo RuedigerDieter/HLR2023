@@ -201,9 +201,8 @@ typedef struct  {
 	struct t_data* t_data;							// globale Variablen
 }T_args;
 
-void t_calculate(void* args) 
+void* t_calculate(void* args) 
 {
-	int pos_r, pos_l, pos_u, pos_d; 		//Positionen für den Stern
 	int zeile,spalte;
 	int star = 0;
 	int residuum = 0;
@@ -221,8 +220,10 @@ void t_calculate(void* args)
 				zeile = i / t_data->N;
 				spalte = i % t_data->N;
 
-				if(zeile == 0 || spalte == 0 || zeile == t_data->N - 1 || spalte == t_data->N - 1)
-				continue; // Ignoriere Randzellen
+				if(!(zeile > 0 && zeile < t_data->N && spalte > 0 && spalte < t_data->N))
+				{
+					continue;
+				}// Ignoriere Randzellen
 
 				star = .25 * (t_data->Matrix_In[zeile + 1][spalte] 
 							+ t_data->Matrix_In[zeile - 1][spalte] 
@@ -248,6 +249,7 @@ void t_calculate(void* args)
 
 			}
 			t_args->lock = 1; 
+			printf("Sperre %d gesetzt\n", t_args->position);
 		}
 	}
 }
@@ -259,7 +261,7 @@ static
 void
 calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct t_data* t_data)
 {
-	int i, j;           /* local variables for loops */
+	uint64_t i;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
 	int keepGoing, locks;	  /* boolean für while-Schleifen */
 	double star;        /* four times center value minus 4 neigh.b values */
@@ -273,8 +275,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	double fpisin = 0.0;
 
 	int term_iteration = options->term_iteration;
-
-	T_args* t_args;
+	T_args* t_args = NULL;
 	/* initialize m1 and m2 depending on algorithm */
 	if (options->method == METH_JACOBI)
 	{
@@ -337,20 +338,24 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		double** Matrix_Out = arguments->Matrix[m1];
 		double** Matrix_In  = arguments->Matrix[m2];
 
+		t_data->Matrix_In = Matrix_In;
+		t_data->Matrix_Out = Matrix_Out;
+
 		maxResiduum = 0;
 
 		if (options->method == METH_JACOBI) // Jacobi
 		{
 			t_data->term_iteration = term_iteration;
-			for (int i = 0; i < options->number; i++)
+			for (i = 0; i < options->number; i++)
 			{
 				t_args[i].lock = 0; // Rechensperre aufheben
+				printf("%d", t_args[i].lock);
 			}
 			keepGoing = 1;
 			while(keepGoing)
 			 {
 				locks = 1;
-				for (int i = 0; i < options->number; i++)
+				for (i = 0; i < options->number; i++)
 				{
 					if (t_args[i].lock == 0)
 					{
@@ -368,7 +373,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		else // Gauß-Seidel
 		{
 			/* over all rows */
-			for (i = 1; i < N; i++)
+			for (int i = 1; i < N; i++)
 			{
 				double fpisin_i = 0.0;
 
@@ -378,7 +383,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 				}
 
 				/* over all columns */
-				for (j = 1; j < N; j++)
+				for (int j = 1; j < N; j++)
 				{
 					star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
