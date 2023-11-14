@@ -192,6 +192,9 @@ struct t_data  {
 	double fpisin;
 
 	int term_iteration;
+
+	pthread_barrier_t* barrier;
+
 };
 
 typedef struct  {
@@ -210,9 +213,9 @@ void* t_calculate(void* args)
 
 	T_args* t_args = (T_args*) args;
 	struct t_data* t_data = t_args->t_data;
-
 	while (1)
 	{
+		pthread_testcancel();
 		if (!t_args->lock)
 		{
 			for (int i = t_args->position; i < (t_args->position + t_args->chunksize); i++)
@@ -248,8 +251,8 @@ void* t_calculate(void* args)
 				t_data->Matrix_Out[zeile][spalte] = star;
 
 			}
-			t_args->lock = 1; 
-			printf("Sperre %d gesetzt\n", t_args->position);
+			t_args->lock = 1;
+			//pthread_barrier_wait(t_data->barrier); 
 		}
 	}
 }
@@ -284,6 +287,9 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 
 		t_data = malloc(sizeof(struct t_data));
 		t_args = malloc(sizeof(T_args) * options->number);
+
+		// t_data->barrier = malloc(sizeof(pthread_barrier_t));
+		// pthread_barrier_init(t_data->barrier, NULL, options->number);
 
 		t_data->num_threads = (int) options->number;	// Anzahl der Threads
 		t_data->arguments = arguments;			
@@ -349,10 +355,9 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 			for (i = 0; i < options->number; i++)
 			{
 				t_args[i].lock = 0; // Rechensperre aufheben
-				printf("%d", t_args[i].lock);
 			}
 			keepGoing = 1;
-			while(keepGoing)
+			while(keepGoing)				// Warten bis alle Threads fertig sind
 			 {
 				locks = 1;
 				for (i = 0; i < options->number; i++)
@@ -426,13 +431,20 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 			term_iteration--;
 		}
 	}
+	
 
 	results->m = m2;
 
 	if (options->method == METH_JACOBI) //freeing memory for Threading
 	{
+		// pthread_barrier_destroy(t_data->barrier);
+		for (i = 0; i < options->number; i++)
+		{
+    		pthread_cancel(t_data->threads[i]);
+		}		
 		free(t_data->threads);
 		free(t_args);
+		free(t_data);
 	}
 
 }
