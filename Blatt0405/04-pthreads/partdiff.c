@@ -178,7 +178,7 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 	}
 }
 
-struct t_data {
+struct t_data  {
 	int num_threads;						// Anzahl der Threads, vllt unnötig
 	pthread_t* threads;						// Array für die Threads
 	int N;									// N
@@ -198,7 +198,7 @@ typedef struct  {
 	int position;							// Startindex pro thread
 	int chunksize;							// Größe des zu berechnenden Bereichs
 	int lock;								// Sperre für die Threads
-	struct t_data* t_data;					// globale Variablen
+	struct t_data* t_data;							// globale Variablen
 }T_args;
 
 void t_calculate(void* args) 
@@ -210,8 +210,7 @@ void t_calculate(void* args)
 	int maxResiduum = 0;
 
 	T_args* t_args = (T_args*) args;
-	// double** Matrix_In = t_args->t_data->Matrix_In;
-	// double** Matrix_Out = t_args->t_data->Matrix_Out;
+	struct t_data* t_data = t_args->t_data;
 
 	while (1)
 	{
@@ -219,40 +218,33 @@ void t_calculate(void* args)
 		{
 			for (int i = t_args->position; i < (t_args->position + t_args->chunksize); i++)
 			{
-				if(i % t_args->t_data->N == 0 
-				|| i % t_args->t_data->N == t_args->t_data->N - 1) 
+				zeile = i / t_data->N;
+				spalte = i % t_data->N;
+
+				if(zeile == 0 || spalte == 0 || zeile == t_data->N - 1 || spalte == t_data->N - 1)
 				continue; // Ignoriere Randzellen
 
-				pos_r = i + 1;
-				pos_l = i - 1;
-				pos_u = i - t_args->t_data->N;
-				pos_d = i + t_args->t_data->N;
-
-				star = .25 * (*t_args->t_data->Matrix_In[pos_r] 
-							+ *t_args->t_data->Matrix_In[pos_l] 
-							+ *t_args->t_data->Matrix_In[pos_u] 
-							+ *t_args->t_data->Matrix_In[pos_d]);
+				star = .25 * (t_data->Matrix_In[zeile + 1][spalte] 
+							+ t_data->Matrix_In[zeile - 1][spalte] 
+							+ t_data->Matrix_In[zeile][spalte - 1] 
+							+ t_data->Matrix_In[zeile][spalte + 1]);
 
 
-				if (t_args->t_data->options->inf_func == FUNC_FPISIN)
+				if (t_data->options->inf_func == FUNC_FPISIN)
 				{
-					zeile = i / t_args->t_data->N;
-					spalte = i % t_args->t_data->N;
-
-
-					star += t_args->t_data->fpisin * t_args->t_data->fpisin 
-					* sin(t_args->t_data->pih * (double) zeile) 
-					* sin(t_args->t_data->pih * (double) spalte);
+					star += t_data->fpisin * t_data->fpisin 
+					* sin(t_data->pih * (double) zeile) 
+					* sin(t_data->pih * (double) spalte);
 				}
 
-				if (t_args->t_data->options->termination == TERM_PREC || t_args->t_data->term_iteration == 1)
+				if (t_data->options->termination == TERM_PREC || t_data->term_iteration == 1)
 				{
-					residuum = *t_args->t_data->Matrix_In[i] - star;
+					residuum = t_args->t_data->Matrix_In[zeile][spalte] - star;
 					residuum = (residuum < 0) ? -residuum : residuum;
 					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
 				}
 
-				*t_args->t_data->Matrix_Out[i] = star;
+				t_data->Matrix_Out[zeile][spalte] = star;
 
 			}
 			t_args->lock = 1; 
@@ -296,19 +288,15 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		t_data->arguments = arguments;			
 		t_data->results = results;
 		t_data->options = options;
-
+		t_data->N = N;
 		t_data->threads = malloc(sizeof(pthread_t) * options->number);	// Array für die Threads 
 		
-		t_data->N = N;
 		int M = (N - 1) * (N - 1);				// Anzahl der Zellen
-
-
+		int position = 0;
 		int cpt = M / options->number;				// Cells pro Thread
 		int cpt_rest = M % options->number;			// Rest Cells pro Thread
 
-		int position;
-
-		for (i = 0; i < t_data->num_threads; i++)		// setup für alle threads
+		for (i = 0; i < options->number; i++)		// setup für alle threads
 		{
 			t_args[i].position = position;			// setzt die Startposition für die Matrix und verteilt dabei den Rest, damit alle Zellen sequentiell zugewiesen sind.
 			if (cpt_rest > 0)
@@ -323,7 +311,8 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 				position += cpt;
 			}
 			t_args[i].lock = 1;						// Rechensperre
-			pthread_create(&t_data->threads[i], NULL, t_calculate, (void*) t_args);
+			t_args[i].t_data = t_data;				// globale Variablen
+			pthread_create(&t_data->threads[i], NULL, t_calculate, (void*) &t_args[i]);
 		}
 
 	}
