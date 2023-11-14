@@ -180,64 +180,82 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 
 struct t_data {
 	int num_threads;						// Anzahl der Threads, vllt unnötig
-	int lock;								// Sperre für die Threads
 	pthread_t* threads;						// Array für die Threads
 	int N;									// N
-	struct calculation_arguments* arguments;
-	struct calculation_results* results;
-	struct options* options;
+	const struct calculation_arguments* arguments;
+	const struct calculation_results* results;
+	const struct options* options;
 	double** Matrix_In;
 	double** Matrix_Out;
+
+	double pih;
+	double fpisin;
+
+	int term_iteration;
 };
 
 typedef struct  {
 	int position;							// Startindex pro thread
 	int chunksize;							// Größe des zu berechnenden Bereichs
+	int lock;								// Sperre für die Threads
 	struct t_data* t_data;					// globale Variablen
 }T_args;
 
 void t_calculate(void* args) 
 {
 	int pos_r, pos_l, pos_u, pos_d; 		//Positionen für den Stern
-	int star = 0; 
+	int zeile,spalte;
+	int star = 0;
+	int residuum = 0;
+	int maxResiduum = 0;
+
 	T_args* t_args = (T_args*) args;
-	double** Matrix_In = t_args->t_data->Matrix_In;
-	double** Matrix_Out = t_args->t_data->Matrix_Out;
+	// double** Matrix_In = t_args->t_data->Matrix_In;
+	// double** Matrix_Out = t_args->t_data->Matrix_Out;
+
 	while (1)
 	{
-		if (!t_args->t_data->lock)
+		if (!t_args->lock)
 		{
-			for (int i = t_args->position; i++; i < (t_args->position + t_args->chunksize)) // TODO evtl. <= ?
+			for (int i = t_args->position; i < (t_args->position + t_args->chunksize); i++)
 			{
 				if(i % t_args->t_data->N == 0 
 				|| i % t_args->t_data->N == t_args->t_data->N - 1) 
 				continue; // Ignoriere Randzellen
 
-			// TODO calculate
 				pos_r = i + 1;
 				pos_l = i - 1;
 				pos_u = i - t_args->t_data->N;
 				pos_d = i + t_args->t_data->N;
 
-				star = .25 * (*Matrix_In[pos_r] + *Matrix_In[pos_l] + *Matrix_In[pos_u] + *Matrix_In[pos_d]);
+				star = .25 * (*t_args->t_data->Matrix_In[pos_r] 
+							+ *t_args->t_data->Matrix_In[pos_l] 
+							+ *t_args->t_data->Matrix_In[pos_u] 
+							+ *t_args->t_data->Matrix_In[pos_d]);
 
 
 				if (t_args->t_data->options->inf_func == FUNC_FPISIN)
 				{
-					star += fpisin_i * sin(pih * (double)j);
+					zeile = i / t_args->t_data->N;
+					spalte = i % t_args->t_data->N;
+
+
+					star += t_args->t_data->fpisin * t_args->t_data->fpisin 
+					* sin(t_args->t_data->pih * (double) zeile) 
+					* sin(t_args->t_data->pih * (double) spalte);
 				}
 
-				if (t_args->t_data->options->termination == TERM_PREC || term_iteration == 1)
+				if (t_args->t_data->options->termination == TERM_PREC || t_args->t_data->term_iteration == 1)
 				{
-					residuum = Matrix_In[i][j] - star;
+					residuum = *t_args->t_data->Matrix_In[i] - star;
 					residuum = (residuum < 0) ? -residuum : residuum;
 					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
 				}
 
-				Matrix_Out[i][j] = star;
+				*t_args->t_data->Matrix_Out[i] = star;
 
 			}
-			break; 
+			t_args->lock = 1; 
 		}
 	}
 }
@@ -270,8 +288,10 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		m1 = 0;
 		m2 = 1;
 
-		t_data->lock = 1;						// Setzt die Rechensperre 
-		t_data->num_threads = options->number;	// Anzahl der Threads
+		t_data = malloc(sizeof(struct t_data));
+		t_args = malloc(sizeof(T_args) * options->number);
+
+		t_data->num_threads = (int) options->number;	// Anzahl der Threads
 		t_data->arguments = arguments;			
 		t_data->results = results;
 		t_data->options = options;
@@ -281,14 +301,13 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		t_data->N = N;
 		int M = (N - 1) * (N - 1);				// Anzahl der Zellen
 
-		t_args = malloc(sizeof(T_args) * options->number);
 
-		int cpt = M / options->number;			// Cells pro Thread
-		int cpt_rest = M % options->number;	// Rest Cells pro Thread
+		int cpt = M / options->number;				// Cells pro Thread
+		int cpt_rest = M % options->number;			// Rest Cells pro Thread
 
 		int position;
 
-		for (i = 0; i < options->number; i++)		// setup für alle threads
+		for (i = 0; i < t_data->num_threads; i++)		// setup für alle threads
 		{
 			t_args[i].position = position;			// setzt die Startposition für die Matrix und verteilt dabei den Rest, damit alle Zellen sequentiell zugewiesen sind.
 			if (cpt_rest > 0)
@@ -302,6 +321,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 				t_args[i].chunksize = cpt;
 				position += cpt;
 			}
+			t_args[i].lock = 1;						// Rechensperre
 			pthread_create(&t_data->threads[i], NULL, t_calculate, (void*) t_args);
 		}
 
@@ -316,7 +336,11 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	{
 		pih = PI * h;
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
+
+		t_data->pih = pih;
+		t_data->fpisin = fpisin;
 	}
+
 
 	while (term_iteration > 0)
 	{
@@ -325,34 +349,45 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 
 		maxResiduum = 0;
 
-		/* over all rows */
-		for (i = 1; i < N; i++)
+		if (options->method == METH_JACOBI) // Jacobi
 		{
-			double fpisin_i = 0.0;
-
-			if (options->inf_func == FUNC_FPISIN)
+			t_data->term_iteration = term_iteration;
+			for (int i = 0; i < options->number; i++)
 			{
-				fpisin_i = fpisin * sin(pih * (double)i);
+				t_args[i].lock = 0; // Rechensperre aufheben
 			}
-
-			/* over all columns */
-			for (j = 1; j < N; j++)
+		}
+		else // Gauß-Seidel
+		{
+			/* over all rows */
+			for (i = 1; i < N; i++)
 			{
-				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+				double fpisin_i = 0.0;
 
 				if (options->inf_func == FUNC_FPISIN)
 				{
-					star += fpisin_i * sin(pih * (double)j);
+					fpisin_i = fpisin * sin(pih * (double)i);
 				}
 
-				if (options->termination == TERM_PREC || term_iteration == 1)
+				/* over all columns */
+				for (j = 1; j < N; j++)
 				{
-					residuum = Matrix_In[i][j] - star;
-					residuum = (residuum < 0) ? -residuum : residuum;
-					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
-				}
+					star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
-				Matrix_Out[i][j] = star;
+					if (options->inf_func == FUNC_FPISIN)
+					{
+						star += fpisin_i * sin(pih * (double)j);
+					}
+
+					if (options->termination == TERM_PREC || term_iteration == 1)
+					{
+						residuum = Matrix_In[i][j] - star;
+						residuum = (residuum < 0) ? -residuum : residuum;
+						maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+					}
+
+					Matrix_Out[i][j] = star;
+				}
 			}
 		}
 
@@ -360,6 +395,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		results->stat_precision = maxResiduum;
 
 		/* exchange m1 and m2 */
+
 		i = m1;
 		m1 = m2;
 		m2 = i;
