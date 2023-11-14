@@ -269,6 +269,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 {
 	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
+	int keepGoing, locks;	  /* boolean für while-Schleifen */
 	double star;        /* four times center value minus 4 neigh.b values */
 	double residuum;    /* residuum of current iteration */
 	double maxResiduum; /* maximum residuum value of a slave in iteration */
@@ -341,7 +342,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		t_data->fpisin = fpisin;
 	}
 
-
+	
 	while (term_iteration > 0)
 	{
 		double** Matrix_Out = arguments->Matrix[m1];
@@ -356,6 +357,24 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 			{
 				t_args[i].lock = 0; // Rechensperre aufheben
 			}
+			keepGoing = 1;
+			while(keepGoing)
+			 {
+				locks = 1;
+				for (int i = 0; i < options->number; i++)
+				{
+					if (t_args[i].lock == 0)
+					{
+						locks = 0;
+						break;
+					}
+				}
+				if(locks)
+				{
+					keepGoing = 0;
+					break;
+				}
+			 }
 		}
 		else // Gauß-Seidel
 		{
