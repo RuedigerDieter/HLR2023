@@ -276,24 +276,24 @@ calculate_old_old (struct calculation_arguments const* arguments, struct calcula
 	results->m = m2;
 }
 
-
 /* ************************************************************************ */
 /* calculate: solves the equation                                           */
 /* ************************************************************************ */
+/*
 static
 void
 calculate_old (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
 {
-	int m1, m2;         /* used as indices for old and new matrices */
-	double star;        /* four times center value minus 4 neigh.b values */
-	double residuum;    /* residuum of current iteration */
-	double maxResiduum; /* maximum residuum value of a slave in iteration */
+	int m1, m2;         
+	double star;        
+	double residuum;   
+	double maxResiduum; 
 
 	int const N = arguments->N;
 	double const h = arguments->h;
 
 	int term_iteration = options->term_iteration; //needs to be shared
-	/* initialize m1 and m2 depending on algorithm */
+	
 	if (options->method == METH_JACOBI)
 	{
 		m1 = 0;
@@ -347,12 +347,10 @@ calculate_old (struct calculation_arguments const* arguments, struct calculation
 				results->stat_iteration++;
 				results->stat_precision = maxResiduum;
 
-				/* exchange m1 and m2 */
 				int o = m1;
 				m1 = m2;
 				m2 = o;
 
-				/* check for stopping calculation depending on termination method */
 				if (options->termination == TERM_PREC)
 				{
 					if (maxResiduum < options->term_precision)
@@ -378,7 +376,6 @@ calculate_old (struct calculation_arguments const* arguments, struct calculation
 
 					double fpisin_i = 0.0;
 
-					/* over all rows */
 					#pragma omp for collapse(2)
 					for (int i = 1; i < N; i++)
 					{
@@ -438,7 +435,7 @@ calculate_old (struct calculation_arguments const* arguments, struct calculation
 
 	results->m = m2;
 }
-
+*/
 
 static
 void
