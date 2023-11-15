@@ -292,8 +292,6 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 	int const N = arguments->N;
 	double const h = arguments->h;
 
-	
-
 	int term_iteration = options->term_iteration; //needs to be shared
 	/* initialize m1 and m2 depending on algorithm */
 	if (options->method == METH_JACOBI)
@@ -310,7 +308,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 	int shared_go = 0;
 	int shared_iteration_done = 0; 
 
-	#pragma omp parallel num_threads(options->number + 1) default(none) private(star, residuum) shared(options, results, arguments, shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N)
+	#pragma omp parallel num_threads(options->number + 1) default(none) private(star, residuum) shared(options, results, arguments, shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N, h)
 	{
 
 		double pih = 0.0;
