@@ -283,10 +283,7 @@ static
 void
 calculate_new (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
 {
-	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
-	double star;        /* four times center value minus 4 neigh.b values */
-	double residuum;    /* residuum of current iteration */
 	double maxResiduum; /* maximum residuum value of a slave in iteration */
 
 	int const N = arguments->N;
@@ -389,7 +386,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 
 									}
 
-									star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+									double star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
 									if (options->inf_func == FUNC_FPISIN)
 									{
