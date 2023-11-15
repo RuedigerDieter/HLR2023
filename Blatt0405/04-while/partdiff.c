@@ -188,14 +188,15 @@ struct t_args
 };
 struct t_data
 {
+	int lock;
 	uint64_t N;
 	double** Matrix_In;
 	double** Matrix_Out;
 	double pih;
 	double fpisin;
 	double maxResiduum;
-	struct options* options;
-	struct calculation_arguments* arguments;
+	const struct options* options;
+	const struct calculation_arguments* arguments;
 	struct calculation_results* results;
 };
 
@@ -204,11 +205,12 @@ void* t_calculate (void * args)
 	struct t_args* t_args = (struct t_args*) args;
 	struct t_data* t_data = (struct t_data*) t_args->t_data;
 
-	struct options* options = t_data->options;
-	struct calculation_arguments* arguments = t_data->arguments;
+	const struct options* options = t_data->options;
+	const struct calculation_arguments* arguments = t_data->arguments;
 	struct calculation_results* results = t_data->results;
 
-	int i, j;           
+	int i = 0;
+	int j = 0;           
 	int m1 = 0;
 	int m2 = 1;
 
@@ -220,6 +222,13 @@ void* t_calculate (void * args)
 	double maxResiduum = 0;
 	double star = 0;
 	int term_iteration = options->term_iteration;
+
+	double fpisin_i = 0.0;
+
+	while(t_data->lock)
+	{
+		//printf("Thread %d waiting...\n", t_args->range_start);
+	}
 	while (term_iteration > 0)
 	{
 		double** Matrix_Out = arguments->Matrix[m1];
@@ -230,7 +239,7 @@ void* t_calculate (void * args)
 		/* over all rows */
 		for (i = t_args->range_start; i < t_args->range_end; i++)
 		{
-			double fpisin_i = 0.0;
+			fpisin_i = 0.0;
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
@@ -279,6 +288,7 @@ void* t_calculate (void * args)
 			term_iteration--;
 		}
 	}
+	pthread_exit(NULL);
 	return NULL;
 }
 
@@ -318,9 +328,16 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		t_args = malloc(sizeof(struct t_args) * thread_count);
 		t_data = malloc(sizeof(struct t_data));
 
-		int rpt = N / thread_count;
-		int rst = N % thread_count;
-		int start = 0;
+		t_data->N = N;
+		t_data->lock = 1;
+		
+		t_data->arguments = arguments;
+		t_data->results = results;
+		t_data->options = options;
+
+		int rpt = (N - 1)  / thread_count;
+		int rst = (N - 1) % thread_count;
+		int start = 1;
 		for (i = 0; i < thread_count; i++)
 		{
 			t_args[i].t_data = t_data;
@@ -356,6 +373,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 			printf("Started Thread %d\n", i);
 			pthread_create(&threads[i], NULL, t_calculate, &t_args[i]);
 		}
+		t_data->lock = 0;
 		printf("Waiting for Threads...\n");
 		for (i = 0; i < thread_count; i++)
 		{
