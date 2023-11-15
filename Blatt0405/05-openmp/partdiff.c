@@ -348,9 +348,9 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 				results->stat_precision = maxResiduum;
 
 				/* exchange m1 and m2 */
-				i = m1;
+				int o = m1;
 				m1 = m2;
-				m2 = i;
+				m2 = o;
 
 				/* check for stopping calculation depending on termination method */
 				if (options->termination == TERM_PREC)
