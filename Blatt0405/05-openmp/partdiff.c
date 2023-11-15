@@ -317,7 +317,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 	int shared_go = 0;
 	int shared_iteration_done = 0; 
 
-	#pragma omp parallel num_threads(options->number + 1) default(none) shared(shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N)
+	#pragma omp parallel num_threads(options->number + 1) default(none) private(options, results, arguments, i, j, pih, fpisin, star, residuum) shared(shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N)
 	{
 
 		int thread_id = omp_get_thread_num();
