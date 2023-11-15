@@ -26,6 +26,7 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/time.h>
+#include <omp.h>
 
 #include "partdiff.h"
 
@@ -283,7 +284,6 @@ static
 void
 calculate_new (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
 {
-	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
 	double star;        /* four times center value minus 4 neigh.b values */
 	double residuum;    /* residuum of current iteration */
@@ -291,9 +291,6 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 
 	int const N = arguments->N;
 	double const h = arguments->h;
-
-	double pih = 0.0;
-	double fpisin = 0.0;
 
 	int term_iteration = options->term_iteration; //needs to be shared
 	/* initialize m1 and m2 depending on algorithm */
@@ -308,129 +305,136 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 		m2 = 0;
 	}
 
-	if (options->inf_func == FUNC_FPISIN)
-	{
-		pih = PI * h;
-		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
-	}
-
 	int shared_go = 0;
 	int shared_iteration_done = 0; 
 
-	//pre calc
-	int threads = options->number;
-	int fixed_thread_ids = (int*) allocateMemory(threads * sizeof(int));
-	for(int x = 0; x < threads; x++) {
-		fixed_thread_ids[x] = x;
-	}
-	int M = (N-1) * (N-1);
-    int L = (int) (M / t);
-    int R = M - L * t;
+	#pragma omp parallel num_threads(options->number + 1) default(none) private(star, residuum) shared(options, results, arguments, shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N, h)
+	{
 
-	#pragma omp parallel num_threads(fixed_thread_ids) shared(shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration)
-    {
+		double pih = 0.0;
+		double fpisin = 0.0;
 
-		int threadid = omp_get_thread_num();
-		int work_start = threadid * L;
-		if(threadid < R) {
-			work_start += threadid;
-		}else{
-			work_start += R;
+		if (options->inf_func == FUNC_FPISIN)
+		{
+			pih = PI * h;
+			fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 		}
-		int work_length = L + (threadid < R);
-		int work_end = work_start + work_length;
-		int calcd_i_start = work_start / (N-1) + 1;
-		int calcd_j_start = work_start % (N-1) + 1;
-		int calcd_i_end = work_end / (N-1) + 1;
-		int calcd_j_end = work_end % (N-1) + 1;
 
-		while(term_iteration > 0) {
+		int thread_id = omp_get_thread_num();
 
-			if(shared_go) {
+		if(thread_id == 0){
 
-				double** Matrix_Out = arguments->Matrix[m1];
-				double** Matrix_In  = arguments->Matrix[m2];
-
-				/* over all rows */
-				for (i = calcd_i_start; i < calcd_i_end; i++)
+			while (term_iteration > 0)
+			{
+				
+				#pragma omp critical
 				{
+					maxResiduum = 0;
+					shared_iteration_done = 0;
+					shared_go = 1;
+					printf("[DEBUG] Set control signs\n");
+				}
+				
+				//calculate
+				while(1) {
+					if(shared_iteration_done == (int) options->number) {
+						printf("[DEBUG] break\n");
+						break;
+					}
+				}
+				//calculation done
+
+				results->stat_iteration++;
+				results->stat_precision = maxResiduum;
+
+				/* exchange m1 and m2 */
+				int o = m1;
+				m1 = m2;
+				m2 = o;
+
+				/* check for stopping calculation depending on termination method */
+				if (options->termination == TERM_PREC)
+				{
+					if (maxResiduum < options->term_precision)
+					{
+						term_iteration = 0;
+					}
+				}
+				else if (options->termination == TERM_ITER)
+				{
+					term_iteration--;
+				}
+			}
+
+		}else{
+			while(term_iteration > 0) {
+
+				if(shared_go) {
+
+					printf("[DEBUG] entered calculation\n");
+
+					double** Matrix_Out = arguments->Matrix[m1];
+					double** Matrix_In  = arguments->Matrix[m2];
+
 					double fpisin_i = 0.0;
 
-					if (options->inf_func == FUNC_FPISIN)
+					/* over all rows */
+					#pragma omp for collapse(2)
+					for (int i = 1; i < N; i++)
 					{
-						fpisin_i = fpisin * sin(pih * (double)i);
+						for (int j = 1; j < N; j++)
+						{
+
+							printf("[DEBUG] %d,%d changed on %d\n", i, j, thread_id);
+
+							if(j == 1) {
+
+								fpisin_i = 0.0;
+
+								if (options->inf_func == FUNC_FPISIN)
+								{
+									fpisin_i = fpisin * sin(pih * (double)i);
+								}
+
+							}
+
+							star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+
+							if (options->inf_func == FUNC_FPISIN)
+							{
+								star += fpisin_i * sin(pih * (double)j);
+							}
+
+							if (options->termination == TERM_PREC || term_iteration == 1)
+							{
+								residuum = Matrix_In[i][j] - star;
+								residuum = (residuum < 0) ? -residuum : residuum;
+
+								#pragma omp critical
+								{
+									maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+								}
+							}
+
+							Matrix_Out[i][j] = star;
+						}
 					}
 
-					/* over all columns */
-					for (j = calcd_j_start; j < calcd_j_end; j++)
+					#pragma omp atomic
+					shared_iteration_done++;
+
+					printf("[DEBUG] shared_iteration_done incremented!\n");
+
+					#pragma omp single
 					{
-						star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
-
-						if (options->inf_func == FUNC_FPISIN)
-						{
-							star += fpisin_i * sin(pih * (double)j);
-						}
-
-						if (options->termination == TERM_PREC || term_iteration == 1)
-						{
-							residuum = Matrix_In[i][j] - star;
-							residuum = (residuum < 0) ? -residuum : residuum;
-							maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
-						}
-
-						Matrix_Out[i][j] = star;
+						printf("[DEBUG] shared_go=0 once!\n");
+						shared_go = 0;
 					}
 				}
-
-				#pragma omp single
-				{
-					shared_go = 0;
-				}
-
 			}
 		}
-
+		
 	}
-
-	while (term_iteration > 0)
-	{
-		maxResiduum = 0;
-
-		shared_iteration_done = 0;
-
-		//calculate
-		while(1) {
-			if(shared_iteration_done == options->number) {
-				break;
-			}
-		}
-		//calculation done
-
-		results->stat_iteration++;
-		results->stat_precision = maxResiduum;
-
-		/* exchange m1 and m2 */
-		i = m1;
-		m1 = m2;
-		m2 = i;
-
-		/* check for stopping calculation depending on termination method */
-		if (options->termination == TERM_PREC)
-		{
-			if (maxResiduum < options->term_precision)
-			{
-				term_iteration = 0;
-			}
-		}
-		else if (options->termination == TERM_ITER)
-		{
-			term_iteration--;
-		}
-
-		int shared_go = 1;
-	}
-
-	free(fixed_thread_ids);
 
 	results->m = m2;
 }
