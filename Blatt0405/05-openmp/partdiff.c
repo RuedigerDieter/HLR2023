@@ -317,13 +317,10 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 	int shared_go = 0;
 	int shared_iteration_done = 0; 
 
-	#pragma omp parallel num_threads(options->number + 1) default(none) shared(shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N)
-    {
-		#pragma omp sections
-		{
+	#pragma omp parallel num_threads(options->number + 1) default(none) shared(shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N) {
+		#pragma omp sections {
 			
-			#pragma omp section
-			{ //main section
+			#pragma omp section { //main section
 
 				while (term_iteration > 0)
 				{
@@ -364,7 +361,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 			}
 
 			for(int x = 0; x < (int) options->number; x++){
-				#pragma omp section{
+				#pragma omp section {
 					while(term_iteration > 0) {
 
 						if(shared_go) {
