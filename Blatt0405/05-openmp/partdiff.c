@@ -319,114 +319,108 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 
 	#pragma omp parallel num_threads(options->number + 1) default(none) shared(shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N)
 	{
-		
-		#pragma omp sections 
-		{
-			
-			#pragma omp section 
-			{ //main section
 
-				while (term_iteration > 0)
-				{
-					maxResiduum = 0;
-					shared_iteration_done = 0;
+		int thread_id = omp_get_thread_num();
 
-					//calculate
-					while(1) {
-						if(shared_iteration_done == (int) options->number) {
-							break;
-						}
+		if(thread_id == 0){
+
+			while (term_iteration > 0)
+			{
+				maxResiduum = 0;
+				shared_iteration_done = 0;
+
+				//calculate
+				while(1) {
+					if(shared_iteration_done == (int) options->number) {
+						break;
 					}
-					//calculation done
-
-					results->stat_iteration++;
-					results->stat_precision = maxResiduum;
-
-					/* exchange m1 and m2 */
-					i = m1;
-					m1 = m2;
-					m2 = i;
-
-					/* check for stopping calculation depending on termination method */
-					if (options->termination == TERM_PREC)
-					{
-						if (maxResiduum < options->term_precision)
-						{
-							term_iteration = 0;
-						}
-					}
-					else if (options->termination == TERM_ITER)
-					{
-						term_iteration--;
-					}
-
-					shared_go = 1;
 				}
+				//calculation done
+
+				results->stat_iteration++;
+				results->stat_precision = maxResiduum;
+
+				/* exchange m1 and m2 */
+				i = m1;
+				m1 = m2;
+				m2 = i;
+
+				/* check for stopping calculation depending on termination method */
+				if (options->termination == TERM_PREC)
+				{
+					if (maxResiduum < options->term_precision)
+					{
+						term_iteration = 0;
+					}
+				}
+				else if (options->termination == TERM_ITER)
+				{
+					term_iteration--;
+				}
+
+				shared_go = 1;
 			}
 
-			for(int x = 0; x < (int) options->number; x++){
-				#pragma omp section 
-				{
-					while(term_iteration > 0) {
+		}else{
+			while(term_iteration > 0) {
 
-						if(shared_go) {
+				if(shared_go) {
 
-							double** Matrix_Out = arguments->Matrix[m1];
-							double** Matrix_In  = arguments->Matrix[m2];
+					double** Matrix_Out = arguments->Matrix[m1];
+					double** Matrix_In  = arguments->Matrix[m2];
 
-							double fpisin_i = 0.0;
+					double fpisin_i = 0.0;
 
-							/* over all rows */
-							#pragma omp for collapse(2)
-							for (i = 1; i < N; i++)
-							{
-								for (j = 1; j < N; j++)
+					/* over all rows */
+					#pragma omp for collapse(2)
+					for (i = 1; i < N; i++)
+					{
+						for (j = 1; j < N; j++)
+						{
+
+							if(j == 1) {
+
+								fpisin_i = 0.0;
+
+								if (options->inf_func == FUNC_FPISIN)
 								{
+									fpisin_i = fpisin * sin(pih * (double)i);
+								}
 
-									if(j == 1) {
+							}
 
-										fpisin_i = 0.0;
+							star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
-										if (options->inf_func == FUNC_FPISIN)
-										{
-											fpisin_i = fpisin * sin(pih * (double)i);
-										}
+							if (options->inf_func == FUNC_FPISIN)
+							{
+								star += fpisin_i * sin(pih * (double)j);
+							}
 
-									}
+							if (options->termination == TERM_PREC || term_iteration == 1)
+							{
+								residuum = Matrix_In[i][j] - star;
+								residuum = (residuum < 0) ? -residuum : residuum;
 
-									star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
-
-									if (options->inf_func == FUNC_FPISIN)
-									{
-										star += fpisin_i * sin(pih * (double)j);
-									}
-
-									if (options->termination == TERM_PREC || term_iteration == 1)
-									{
-										residuum = Matrix_In[i][j] - star;
-										residuum = (residuum < 0) ? -residuum : residuum;
-
-										#pragma omp critical
-										{
-											maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
-										}
-									}
-
-									Matrix_Out[i][j] = star;
+								#pragma omp critical
+								{
+									maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
 								}
 							}
 
-							shared_iteration_done++;
-
-							#pragma omp single
-							{
-								shared_go = 0;
-							}
+							Matrix_Out[i][j] = star;
 						}
+					}
+
+					shared_iteration_done++;
+
+					#pragma omp single
+					{
+						shared_go = 0;
 					}
 				}
 			}
 		}
+		
 	}
 
 	results->m = m2;
