@@ -179,7 +179,7 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 
 static
 void
-calculate_old_old (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+calculate_old (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
 {
 	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
