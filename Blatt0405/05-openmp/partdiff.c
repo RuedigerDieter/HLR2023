@@ -456,7 +456,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 	double pih = 0.0;
 	double fpisin = 0.0;
 
-	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j, star, residuum, pih, fpisin) shared(arguments, options, results, maxResiduum, N, h,  m1, m2)
+	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j, pih, fpisin) shared(arguments, options, results, maxResiduum, N, h,  m1, m2)
 	{
 
 		int term_iteration = options->term_iteration;
@@ -516,7 +516,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 					{
 						residuum = Matrix_In[i][j] - star;
 						residuum = (residuum < 0) ? -residuum : residuum;
-						
+
 						#pragma omp atomic
 						maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
 					}
