@@ -327,10 +327,14 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 
 			while (term_iteration > 0)
 			{
-				maxResiduum = 0;
-				shared_iteration_done = 0;
-				shared_go = 1;
-
+				
+				#pragma omp critical
+				{
+					maxResiduum = 0;
+					shared_iteration_done = 0;
+					shared_go = 1;
+				}
+				
 				//calculate
 				while(1) {
 					if(shared_iteration_done == (int) options->number) {
@@ -411,6 +415,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 						}
 					}
 
+					#pragma omp atomic
 					shared_iteration_done++;
 
 					#pragma omp single
