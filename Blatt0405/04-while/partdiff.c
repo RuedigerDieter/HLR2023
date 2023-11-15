@@ -188,12 +188,13 @@ struct t_args
 };
 struct t_data
 {
+	pthread_mutex_t mutex;
 	int lock;
 	uint64_t N;
 	double** Matrix_In;
 	double** Matrix_Out;
-	double pih;
-	double fpisin;
+	
+	double pih,fpisin;
 	double maxResiduum;
 	const struct options* options;
 	const struct calculation_arguments* arguments;
@@ -219,22 +220,16 @@ void* t_calculate (void * args)
 	double const fpisin = t_data->fpisin;
 
 	double residuum = 0;
-	double maxResiduum = 0;
+	double local_maxResiduum = 0;
 	double star = 0;
 	int term_iteration = options->term_iteration;
 
 	double fpisin_i = 0.0;
 
-	while(t_data->lock)
-	{
-		//printf("Thread %d waiting...\n", t_args->range_start);
-	}
 	while (term_iteration > 0)
 	{
 		double** Matrix_Out = arguments->Matrix[m1];
 		double** Matrix_In  = arguments->Matrix[m2];
-
-		maxResiduum = 0;
 
 		/* over all rows */
 		for (i = t_args->range_start; i < t_args->range_end; i++)
@@ -260,15 +255,17 @@ void* t_calculate (void * args)
 				{
 					residuum = Matrix_In[i][j] - star;
 					residuum = (residuum < 0) ? -residuum : residuum;
-					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+					local_maxResiduum = (residuum < local_maxResiduum) ? local_maxResiduum : residuum;
 				}
-
 				Matrix_Out[i][j] = star;
 			}
+
 		}
 
+		pthread_mutex_lock(&t_data->mutex);
+		t_data->maxResiduum = (local_maxResiduum < t_data->maxResiduum) ? t_data->maxResiduum : local_maxResiduum;
 		results->stat_iteration++;
-		results->stat_precision = maxResiduum;
+		pthread_mutex_unlock(&t_data->mutex);
 
 		/* exchange m1 and m2 */
 		i = m1;
@@ -278,7 +275,7 @@ void* t_calculate (void * args)
 		/* check for stopping calculation depending on termination method */
 		if (options->termination == TERM_PREC)
 		{
-			if (maxResiduum < options->term_precision)
+			if (t_data->maxResiduum < options->term_precision)
 			{
 				term_iteration = 0;
 			}
@@ -330,7 +327,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 
 		t_data->N = N;
 		t_data->lock = 1;
-		
+		t_data->mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;		
 		t_data->arguments = arguments;
 		t_data->results = results;
 		t_data->options = options;
@@ -378,7 +375,11 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		for (i = 0; i < thread_count; i++)
 		{
 			pthread_join(threads[i], NULL);
+			results->stat_precision = t_data->maxResiduum;
 		}
+		free(t_args);
+		free(t_data);
+		free(threads);
 	}
 	else
 	{
