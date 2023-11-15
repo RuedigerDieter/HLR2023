@@ -181,7 +181,7 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 /* ************************************************************************ */
 static
 void
-calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+calculate_new (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
 {
 	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
@@ -195,8 +195,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	double pih = 0.0;
 	double fpisin = 0.0;
 
-	int term_iteration = options->term_iteration;
-
+	int term_iteration = options->term_iteration; //needs to be shared
 	/* initialize m1 and m2 depending on algorithm */
 	if (options->method == METH_JACOBI)
 	{
@@ -215,43 +214,97 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
-	while (term_iteration > 0)
-	{
-		double** Matrix_Out = arguments->Matrix[m1];
-		double** Matrix_In  = arguments->Matrix[m2];
+	int shared_go = 0;
+	int shared_iteration_done = 0; 
 
-		maxResiduum = 0;
+	//pre calc
+	int threads = options->number;
+	int fixed_thread_ids = (int*) allocateMemory(threads * sizeof(int));
+	for(int x = 0; x < threads; x++) {
+		fixed_thread_ids[x] = x;
+	}
+	int M = (N-1) * (N-1);
+    int L = (int) (M / t);
+    int R = M - L * t;
 
-		/* over all rows */
-		for (i = 1; i < N; i++)
-		{
-			double fpisin_i = 0.0;
+	#pragma omp parallel num_threads(fixed_thread_ids) shared(shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration)
+    {
 
-			if (options->inf_func == FUNC_FPISIN)
-			{
-				fpisin_i = fpisin * sin(pih * (double)i);
-			}
+		int threadid = omp_get_thread_num();
+		int work_start = threadid * L;
+		if(threadid < R) {
+			work_start += threadid;
+		}else{
+			work_start += R;
+		}
+		int work_length = L + (threadid < R);
+		int work_end = work_start + work_length;
+		int calcd_i_start = work_start / (N-1) + 1;
+		int calcd_j_start = work_start % (N-1) + 1;
+		int calcd_i_end = work_end / (N-1) + 1;
+		int calcd_j_end = work_end % (N-1) + 1;
 
-			/* over all columns */
-			for (j = 1; j < N; j++)
-			{
-				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+		while(term_iteration > 0) {
 
-				if (options->inf_func == FUNC_FPISIN)
+			if(shared_go) {
+
+				double** Matrix_Out = arguments->Matrix[m1];
+				double** Matrix_In  = arguments->Matrix[m2];
+
+				/* over all rows */
+				for (i = calcd_i_start; i < calcd_i_end; i++)
 				{
-					star += fpisin_i * sin(pih * (double)j);
+					double fpisin_i = 0.0;
+
+					if (options->inf_func == FUNC_FPISIN)
+					{
+						fpisin_i = fpisin * sin(pih * (double)i);
+					}
+
+					/* over all columns */
+					for (j = calcd_j_start; j < calcd_j_end; j++)
+					{
+						star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+
+						if (options->inf_func == FUNC_FPISIN)
+						{
+							star += fpisin_i * sin(pih * (double)j);
+						}
+
+						if (options->termination == TERM_PREC || term_iteration == 1)
+						{
+							residuum = Matrix_In[i][j] - star;
+							residuum = (residuum < 0) ? -residuum : residuum;
+							maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+						}
+
+						Matrix_Out[i][j] = star;
+					}
 				}
 
-				if (options->termination == TERM_PREC || term_iteration == 1)
+				#pragma omp single
 				{
-					residuum = Matrix_In[i][j] - star;
-					residuum = (residuum < 0) ? -residuum : residuum;
-					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+					shared_go = 0;
 				}
 
-				Matrix_Out[i][j] = star;
 			}
 		}
+
+	}
+
+	while (term_iteration > 0)
+	{
+		maxResiduum = 0;
+
+		shared_iteration_done = 0;
+
+		//calculate
+		while(1) {
+			if(shared_iteration_done == options->number) {
+				break;
+			}
+		}
+		//calculation done
 
 		results->stat_iteration++;
 		results->stat_precision = maxResiduum;
@@ -273,7 +326,11 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		{
 			term_iteration--;
 		}
+
+		int shared_go = 1;
 	}
+
+	free(fixed_thread_ids);
 
 	results->m = m2;
 }
@@ -384,9 +441,16 @@ main (int argc, char** argv)
 	allocateMatrices(&arguments);
 	initMatrices(&arguments, &options);
 
-	gettimeofday(&start_time, NULL);
-	calculate(&arguments, &results, &options);
-	gettimeofday(&comp_time, NULL);
+	if(options.method == METH_JACOBI) {
+		gettimeofday(&start_time, NULL);
+		calculate_new(&arguments, &results, &options);
+		gettimeofday(&comp_time, NULL);
+	}else {
+		gettimeofday(&start_time, NULL);
+		calculate_old(&arguments, &results, &options);
+		gettimeofday(&comp_time, NULL);
+	}
+	
 
 	displayStatistics(&arguments, &results, &options);
 	displayMatrix(&arguments, &results, &options);
