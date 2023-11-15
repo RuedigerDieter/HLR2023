@@ -329,7 +329,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 
 					//calculate
 					while(1) {
-						if(shared_iteration_done == options->number) {
+						if(shared_iteration_done == (int) options->number) {
 							break;
 						}
 					}
