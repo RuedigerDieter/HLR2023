@@ -28,8 +28,8 @@
 #include <sys/time.h>
 
 #include "partdiff.h"
-
 #include <pthread.h>
+#include <limits.h>
 
 struct calculation_arguments
 {
@@ -178,104 +178,123 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 	}
 }
 
-struct t_data  {
-	uint64_t num_threads;						// Anzahl der Threads
-	pthread_t* threads;						// Array für die Threads
-	int N;									// N
-	const struct calculation_arguments* arguments;
-	const struct calculation_results* results;
-	const struct options* options;
-	double** Matrix_In;
-	double** Matrix_Out;
-
-	double pih;
-	double fpisin;
-
-	int term_iteration;
-
-	pthread_barrier_t* barrier;
-	pthread_mutex_t* mutex;
-	double maxResiduum;
-};
-
-typedef struct  {
-	int position;							// Startindex pro thread
-	int chunksize;							// Größe des zu berechnenden Bereichs
-	int lock;								// Sperre für die Threads
-	struct t_data* t_data;							// globale Variablen
-}T_args;
-
-void* t_calculate(void* args) 
-{
-	int zeile,spalte;
-	double star = 0.0;
-	double residuum = 0;
-
-	T_args* t_args = (T_args*) args;
-	struct t_data* t_data = t_args->t_data;
-
-	t_data->maxResiduum = 0.0;
-	while (1)
-	{
-		pthread_testcancel();
-		if (!t_args->lock)
-		{
-			for (int i = t_args->position; i < (t_args->position + t_args->chunksize); i++)
-			{
-				zeile = i / t_data->N;
-				spalte = i % t_data->N;
-
-				if(!(zeile > 0 					// Ignoriere Randzellen
-				&& zeile < t_data->N 
-				&& spalte > 0 
-				&& spalte < t_data->N))
-				{
-					continue;
-				}
-
-				star =  .25 * (t_data->Matrix_In[zeile + 1][spalte] 
-							+ t_data->Matrix_In[zeile - 1][spalte] 
-							+ t_data->Matrix_In[zeile][spalte - 1] 
-							+ t_data->Matrix_In[zeile][spalte + 1]);
-
-
-				if (t_data->options->inf_func == FUNC_FPISIN)
-				{
-					star += t_data->fpisin * t_data->fpisin 
-					* sin(t_data->pih * (double) zeile) 
-					* sin(t_data->pih * (double) spalte);
-				}
-
-
-				if (t_data->options->termination == TERM_PREC || t_data->term_iteration == 1)
-				{
-					residuum = t_args->t_data->Matrix_In[zeile][spalte] - star;
-   					residuum = (residuum < 0) ? -residuum : residuum;
-    				pthread_mutex_lock(t_data->mutex);
-    				t_data->maxResiduum = (residuum < t_data->maxResiduum) ? t_data->maxResiduum : residuum;
-    				pthread_mutex_unlock(t_data->mutex);
-				}
-
-				t_data->Matrix_Out[zeile][spalte] = star;
-				// printf("%e\n",t_data->Matrix_Out[zeile][spalte]);
-
-			}
-			t_args->lock = 1;
-			//pthread_barrier_wait(t_data->barrier); 
-		}
-	}
-}
-
 /* ************************************************************************ */
 /* calculate: solves the equation                                           */
 /* ************************************************************************ */
+
+struct t_args 
+{
+	struct t_data* t_data;
+	int range_start,range_end;
+};
+struct t_data
+{
+	pthread_mutex_t mutex;
+	int lock;
+	uint64_t N;
+	double** Matrix_In;
+	double** Matrix_Out;
+	
+	double pih,fpisin;
+	double maxResiduum;
+	const struct options* options;
+	const struct calculation_arguments* arguments;
+	struct calculation_results* results;
+};
+
+void* t_calculate (void * args)
+{
+	struct t_args* t_args = (struct t_args*) args;
+	struct t_data* t_data = (struct t_data*) t_args->t_data;
+
+	const struct options* options = t_data->options;
+	const struct calculation_arguments* arguments = t_data->arguments;
+	struct calculation_results* results = t_data->results;
+
+	int i = 0;
+	int j = 0;           
+	int m1 = 0;
+	int m2 = 1;
+
+	int const N = t_data->N;
+	double const pih = t_data->pih;
+	double const fpisin = t_data->fpisin;
+
+	double residuum = 0;
+	double local_maxResiduum = 0;
+	double star = 0;
+	int term_iteration = options->term_iteration;
+
+	double fpisin_i = 0.0;
+
+	while (term_iteration > 0)
+	{
+		double** Matrix_Out = arguments->Matrix[m1];
+		double** Matrix_In  = arguments->Matrix[m2];
+
+		/* over all rows */
+		for (i = t_args->range_start; i < t_args->range_end; i++)
+		{
+			fpisin_i = 0.0;
+
+			if (options->inf_func == FUNC_FPISIN)
+			{
+				fpisin_i = fpisin * sin(pih * (double)i);
+			}
+
+			/* over all columns */
+			for (j = 1; j <  N; j++)
+			{
+				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+
+				if (options->inf_func == FUNC_FPISIN)
+				{
+					star += fpisin_i * sin(pih * (double)j);
+				}
+
+				if (options->termination == TERM_PREC || term_iteration == 1)
+				{
+					residuum = Matrix_In[i][j] - star;
+					residuum = (residuum < 0) ? -residuum : residuum;
+					local_maxResiduum = (residuum < local_maxResiduum) ? local_maxResiduum : residuum;
+				}
+				Matrix_Out[i][j] = star;
+			}
+
+		}
+
+		pthread_mutex_lock(&t_data->mutex);
+		t_data->maxResiduum = (local_maxResiduum < t_data->maxResiduum) ? t_data->maxResiduum : local_maxResiduum;
+		results->stat_iteration++;
+		pthread_mutex_unlock(&t_data->mutex);
+
+		/* exchange m1 and m2 */
+		i = m1;
+		m1 = m2;
+		m2 = i;
+
+		/* check for stopping calculation depending on termination method */
+		if (options->termination == TERM_PREC)
+		{
+			if (t_data->maxResiduum < options->term_precision)
+			{
+				term_iteration = 0;
+			}
+		}
+		else if (options->termination == TERM_ITER)
+		{
+			term_iteration--;
+		}
+	}
+	pthread_exit(NULL);
+}
+
 static
 void
-calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct t_data* t_data)
+calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
 {
-	uint64_t i;           /* local variables for loops */
+	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
-	int keepGoing, locks;	  /* boolean für while-Schleifen */
 	double star;        /* four times center value minus 4 neigh.b values */
 	double residuum;    /* residuum of current iteration */
 	double maxResiduum; /* maximum residuum value of a slave in iteration */
@@ -287,52 +306,43 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	double fpisin = 0.0;
 
 	int term_iteration = options->term_iteration;
-	T_args* t_args = NULL;
+
+	int thread_count = 0;
+	pthread_t* threads = NULL;
+
+	struct t_args* t_args = NULL;
+	struct t_data* t_data = NULL;
+
 	/* initialize m1 and m2 depending on algorithm */
 	if (options->method == METH_JACOBI)
 	{
 		m1 = 0;
 		m2 = 1;
 
+		thread_count = (int) options->number;
+		threads = malloc(sizeof(pthread_t) * thread_count);
+
+		t_args = malloc(sizeof(struct t_args) * thread_count);
 		t_data = malloc(sizeof(struct t_data));
-		t_args = malloc(sizeof(T_args) * options->number);
 
-		// t_data->barrier = malloc(sizeof(pthread_barrier_t));
-		// pthread_barrier_init(t_data->barrier, NULL, options->number);
-
-		t_data->num_threads = options->number;	// Anzahl der Threads
-		t_data->arguments = arguments;			
+		t_data->N = N;
+		pthread_mutex_init(&t_data->mutex, NULL);		
+		t_data->maxResiduum = 0;
+		t_data->arguments = arguments;
 		t_data->results = results;
 		t_data->options = options;
-		t_data->N = N;
-		t_data->threads = malloc(sizeof(pthread_t) * options->number);	// Array für die Threads 
-		
-		int M = (N - 1) * (N - 1);				// Anzahl der Zellen
-		int position = 0;
-		int cpt = M / options->number;				// Cells pro Thread
-		int cpt_rest = M % options->number;			// Rest Cells pro Thread
 
-		for (i = 0; i < options->number; i++)		// setup für alle threads
+		int rpt = (N - 1)  / thread_count;
+		int rst = (N - 1) % thread_count;
+		int start = 1;
+		for (i = 0; i < thread_count; i++)
 		{
-			t_args[i].position = position;			// setzt die Startposition für die Matrix und verteilt dabei den Rest, damit alle Zellen sequentiell zugewiesen sind.
-			if (cpt_rest > 0)
-			{
-				t_args[i].chunksize = cpt + 1;
-				cpt_rest--;
-				position += cpt + 1;
-			}
-			else
-			{
-				t_args[i].chunksize = cpt;
-				position += cpt;
-			}
-			t_args[i].lock = 1;						// Rechensperre
-			t_args[i].t_data = t_data;				// globale Variablen
-
-			pthread_mutex_t maxResiduumMutex;
-			pthread_mutex_init(&maxResiduumMutex, NULL);
-			t_data->mutex = &maxResiduumMutex;
-			pthread_create(&t_data->threads[i], NULL, t_calculate, (void*) &t_args[i]);
+			t_args[i].t_data = t_data;
+			t_args[i].range_start = start;
+			t_args[i].range_end = start + rpt + (rst > 0 ? 1 : 0);
+			start = t_args[i].range_end;
+			rst--;
+			printf("Finished setting up Thread %d\n", i);
 		}
 	}
 	else
@@ -345,61 +355,44 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	{
 		pih = PI * h;
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
-
-		t_data->pih = pih;
-		t_data->fpisin = fpisin;
+		if (options->method == METH_JACOBI)
+		{
+			t_data->pih = pih;
+			t_data->fpisin = fpisin;
+		}
 	}
 
-	
-	while (term_iteration > 0)
+	if (options->method == METH_JACOBI)
 	{
-		double** Matrix_Out = arguments->Matrix[m1];
-		double** Matrix_In  = arguments->Matrix[m2];
-
-		// for (int x = 0; x < N; x++)
-		// {
-		// 	for (int y = 0; y < N; y++)
-		// 	{
-		// 		printf("%f",arguments->Matrix[0][x][y]);
-		// 	}
-		// 	printf("\n");
-		// }
-
-		t_data->Matrix_In = Matrix_In;
-		t_data->Matrix_Out = Matrix_Out;
-
-		maxResiduum = 0;
-
-		if (options->method == METH_JACOBI) // Jacobi
+		printf("Starting Threads...\n");
+		for (i = 0; i < thread_count; i++)
 		{
-			t_data->term_iteration = term_iteration;
-			for (i = 0; i < options->number; i++)
-			{
-				t_args[i].lock = 0; // Rechensperre aufheben
-			}
-			keepGoing = 1;
-			while(keepGoing)				// Warten bis alle Threads fertig sind
-			 {
-				locks = 1;
-				for (i = 0; i < options->number; i++)
-				{
-					if (t_args[i].lock == 0)
-					{
-						locks = 0;
-						break;
-					}
-				}
-				if(locks)
-				{
-					keepGoing = 0;
-					break;
-				}
-			 }
+			printf("Started Thread %d\n", i);
+			pthread_create(&threads[i], NULL, t_calculate, &t_args[i]);
 		}
-		else // Gauß-Seidel
+		t_data->lock = 0;
+		printf("Waiting for Threads...\n");
+		for (i = 0; i < thread_count; i++)
 		{
+			pthread_join(threads[i], NULL);
+			results->stat_precision = t_data->maxResiduum;
+		}
+		pthread_mutex_destroy(&t_data->mutex);
+		free(t_args);
+		free(t_data);
+		free(threads);
+	}
+	else
+	{
+		while (term_iteration > 0)
+		{
+			double** Matrix_Out = arguments->Matrix[m1];
+			double** Matrix_In  = arguments->Matrix[m2];
+
+			maxResiduum = 0;
+
 			/* over all rows */
-			for (int i = 1; i < N; i++)
+			for (i = 1; i < N; i++)
 			{
 				double fpisin_i = 0.0;
 
@@ -409,7 +402,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 				}
 
 				/* over all columns */
-				for (int j = 1; j < N; j++)
+				for (j = 1; j < N; j++)
 				{
 					star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
@@ -428,47 +421,30 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 					Matrix_Out[i][j] = star;
 				}
 			}
-		}
 
-		results->stat_iteration++;
-		results->stat_precision = maxResiduum;
+			results->stat_iteration++;
+			results->stat_precision = maxResiduum;
 
-		/* exchange m1 and m2 */
+			/* exchange m1 and m2 */
+			i = m1;
+			m1 = m2;
+			m2 = i;
 
-		i = m1;
-		m1 = m2;
-		m2 = i;
-
-		/* check for stopping calculation depending on termination method */
-		if (options->termination == TERM_PREC)
-		{
-			if (maxResiduum < options->term_precision)
+			/* check for stopping calculation depending on termination method */
+			if (options->termination == TERM_PREC)
 			{
-				term_iteration = 0;
+				if (maxResiduum < options->term_precision)
+				{
+					term_iteration = 0;
+				}
+			}
+			else if (options->termination == TERM_ITER)
+			{
+				term_iteration--;
 			}
 		}
-		else if (options->termination == TERM_ITER)
-		{
-			term_iteration--;
-		}
 	}
-	
-
 	results->m = m2;
-
-	if (options->method == METH_JACOBI) //freeing memory for Threading
-	{
-		// pthread_barrier_destroy(t_data->barrier);
-		for (i = 0; i < options->number; i++)
-		{
-    		pthread_cancel(t_data->threads[i]);
-		}
-		pthread_mutex_destroy(t_data->mutex);
-		free(t_data->threads);
-		free(t_args);
-		free(t_data);
-	}
-
 }
 
 /* ************************************************************************ */
@@ -569,7 +545,6 @@ main (int argc, char** argv)
 	struct options options;
 	struct calculation_arguments arguments;
 	struct calculation_results results;
-	struct t_data t_data;
 
 	askParams(&options, argc, argv);
 
@@ -579,7 +554,7 @@ main (int argc, char** argv)
 	initMatrices(&arguments, &options);
 
 	gettimeofday(&start_time, NULL);
-	calculate(&arguments, &results, &options,&t_data);
+	calculate(&arguments, &results, &options);
 	gettimeofday(&comp_time, NULL);
 
 	displayStatistics(&arguments, &results, &options);
