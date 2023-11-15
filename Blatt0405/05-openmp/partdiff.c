@@ -329,6 +329,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 			{
 				maxResiduum = 0;
 				shared_iteration_done = 0;
+				shared_go = 1;
 
 				//calculate
 				while(1) {
@@ -358,8 +359,6 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 				{
 					term_iteration--;
 				}
-
-				shared_go = 1;
 			}
 
 		}else{
