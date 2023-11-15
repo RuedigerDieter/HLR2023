@@ -359,11 +359,11 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 						term_iteration--;
 					}
 
-					int shared_go = 1;
+					shared_go = 1;
 				}
 			}
 
-			for(int x = 0; x < options->number; x++){
+			for(int x = 0; x < (int) options->number; x++){
 				#pragma omp section{
 					while(term_iteration > 0) {
 
