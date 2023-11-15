@@ -385,6 +385,8 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 						for (int j = 1; j < N; j++)
 						{
 
+							printf("[DEBUG] %d,%d changed on %d\n", i, j, thread_id);
+
 							if(j == 1) {
 
 								fpisin_i = 0.0;
