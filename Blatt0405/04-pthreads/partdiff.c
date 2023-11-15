@@ -276,10 +276,12 @@ void* t_calculate (void * args)
 		/* check for stopping calculation depending on termination method */
 		if (options->termination == TERM_PREC)
 		{
+			pthread_mutex_lock(&t_data->mutex);
 			if (t_data->maxResiduum < options->term_precision)
 			{
 				term_iteration = 0;
 			}
+			pthread_mutex_unlock(&t_data->mutex);
 		}
 		else if (options->termination == TERM_ITER)
 		{
