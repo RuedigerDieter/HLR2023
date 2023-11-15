@@ -332,11 +332,13 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 					maxResiduum = 0;
 					shared_iteration_done = 0;
 					shared_go = 1;
+					printf("[DEBUG] Set control signs\n");
 				}
 				
 				//calculate
 				while(1) {
 					if(shared_iteration_done == (int) options->number) {
+						printf("[DEBUG] break\n");
 						break;
 					}
 				}
@@ -368,6 +370,8 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 			while(term_iteration > 0) {
 
 				if(shared_go) {
+
+					printf("[DEBUG] entered calculation\n");
 
 					double** Matrix_Out = arguments->Matrix[m1];
 					double** Matrix_In  = arguments->Matrix[m2];
@@ -417,8 +421,11 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 					#pragma omp atomic
 					shared_iteration_done++;
 
+					printf("[DEBUG] shared_iteration_done incremented!\n");
+
 					#pragma omp single
 					{
+						printf("[DEBUG] shared_go=0 once!\n");
 						shared_go = 0;
 					}
 				}
