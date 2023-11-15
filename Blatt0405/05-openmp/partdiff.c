@@ -176,12 +176,9 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 	}
 }
 
-/* ************************************************************************ */
-/* calculate: solves the equation                                           */
-/* ************************************************************************ */
 static
 void
-calculate (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+calculate_old (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
 {
 	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
@@ -274,6 +271,166 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 			term_iteration--;
 		}
 	}
+
+	results->m = m2;
+}
+
+
+/* ************************************************************************ */
+/* calculate: solves the equation                                           */
+/* ************************************************************************ */
+static
+void
+calculate_new (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+{
+	int i, j;           /* local variables for loops */
+	int m1, m2;         /* used as indices for old and new matrices */
+	double star;        /* four times center value minus 4 neigh.b values */
+	double residuum;    /* residuum of current iteration */
+	double maxResiduum; /* maximum residuum value of a slave in iteration */
+
+	int const N = arguments->N;
+	double const h = arguments->h;
+
+	double pih = 0.0;
+	double fpisin = 0.0;
+
+	int term_iteration = options->term_iteration; //needs to be shared
+	/* initialize m1 and m2 depending on algorithm */
+	if (options->method == METH_JACOBI)
+	{
+		m1 = 0;
+		m2 = 1;
+	}
+	else
+	{
+		m1 = 0;
+		m2 = 0;
+	}
+
+	if (options->inf_func == FUNC_FPISIN)
+	{
+		pih = PI * h;
+		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
+	}
+
+	int shared_go = 0;
+	int shared_iteration_done = 0; 
+
+	//pre calc
+	int threads = options->number;
+	int fixed_thread_ids = (int*) allocateMemory(threads * sizeof(int));
+	for(int x = 0; x < threads; x++) {
+		fixed_thread_ids[x] = x;
+	}
+	int M = (N-1) * (N-1);
+    int L = (int) (M / t);
+    int R = M - L * t;
+
+	#pragma omp parallel num_threads(fixed_thread_ids) shared(shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration)
+    {
+
+		int threadid = omp_get_thread_num();
+		int work_start = threadid * L;
+		if(threadid < R) {
+			work_start += threadid;
+		}else{
+			work_start += R;
+		}
+		int work_length = L + (threadid < R);
+		int work_end = work_start + work_length;
+		int calcd_i_start = work_start / (N-1) + 1;
+		int calcd_j_start = work_start % (N-1) + 1;
+		int calcd_i_end = work_end / (N-1) + 1;
+		int calcd_j_end = work_end % (N-1) + 1;
+
+		while(term_iteration > 0) {
+
+			if(shared_go) {
+
+				double** Matrix_Out = arguments->Matrix[m1];
+				double** Matrix_In  = arguments->Matrix[m2];
+
+				/* over all rows */
+				for (i = calcd_i_start; i < calcd_i_end; i++)
+				{
+					double fpisin_i = 0.0;
+
+					if (options->inf_func == FUNC_FPISIN)
+					{
+						fpisin_i = fpisin * sin(pih * (double)i);
+					}
+
+					/* over all columns */
+					for (j = calcd_j_start; j < calcd_j_end; j++)
+					{
+						star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+
+						if (options->inf_func == FUNC_FPISIN)
+						{
+							star += fpisin_i * sin(pih * (double)j);
+						}
+
+						if (options->termination == TERM_PREC || term_iteration == 1)
+						{
+							residuum = Matrix_In[i][j] - star;
+							residuum = (residuum < 0) ? -residuum : residuum;
+							maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+						}
+
+						Matrix_Out[i][j] = star;
+					}
+				}
+
+				#pragma omp single
+				{
+					shared_go = 0;
+				}
+
+			}
+		}
+
+	}
+
+	while (term_iteration > 0)
+	{
+		maxResiduum = 0;
+
+		shared_iteration_done = 0;
+
+		//calculate
+		while(1) {
+			if(shared_iteration_done == options->number) {
+				break;
+			}
+		}
+		//calculation done
+
+		results->stat_iteration++;
+		results->stat_precision = maxResiduum;
+
+		/* exchange m1 and m2 */
+		i = m1;
+		m1 = m2;
+		m2 = i;
+
+		/* check for stopping calculation depending on termination method */
+		if (options->termination == TERM_PREC)
+		{
+			if (maxResiduum < options->term_precision)
+			{
+				term_iteration = 0;
+			}
+		}
+		else if (options->termination == TERM_ITER)
+		{
+			term_iteration--;
+		}
+
+		int shared_go = 1;
+	}
+
+	free(fixed_thread_ids);
 
 	results->m = m2;
 }
@@ -384,9 +541,16 @@ main (int argc, char** argv)
 	allocateMatrices(&arguments);
 	initMatrices(&arguments, &options);
 
-	gettimeofday(&start_time, NULL);
-	calculate(&arguments, &results, &options);
-	gettimeofday(&comp_time, NULL);
+	if(options.method == METH_JACOBI) {
+		gettimeofday(&start_time, NULL);
+		calculate_new(&arguments, &results, &options);
+		gettimeofday(&comp_time, NULL);
+	}else {
+		gettimeofday(&start_time, NULL);
+		calculate_old(&arguments, &results, &options);
+		gettimeofday(&comp_time, NULL);
+	}
+	
 
 	displayStatistics(&arguments, &results, &options);
 	displayMatrix(&arguments, &results, &options);
