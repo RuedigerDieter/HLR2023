@@ -453,11 +453,12 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 	int const N = arguments->N;
 	double const h = arguments->h;
 
-	double pih = 0.0;
-	double fpisin = 0.0;
-
-	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j, pih, fpisin) shared(arguments, options, results, maxResiduum, N, h,  m1, m2)
+	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j,) shared(arguments, options, results, maxResiduum, N, h,  m1, m2)
 	{
+
+		double pih = 0.0;
+		double fpisin = 0.0;
+
 
 		int term_iteration = options->term_iteration;
 
@@ -479,7 +480,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 			fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 		}
 
-		double fpisin_i;
+		double fpisin_i = 0.0;
 
 		while (term_iteration > 0)
 		{
