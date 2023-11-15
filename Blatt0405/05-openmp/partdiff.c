@@ -427,8 +427,6 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 		}
 	}
 
-	free(fixed_thread_ids);
-
 	results->m = m2;
 }
 
