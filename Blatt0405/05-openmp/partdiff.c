@@ -284,7 +284,6 @@ static
 void
 calculate_new (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
 {
-	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
 	double star;        /* four times center value minus 4 neigh.b values */
 	double residuum;    /* residuum of current iteration */
@@ -293,8 +292,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 	int const N = arguments->N;
 	double const h = arguments->h;
 
-	double pih = 0.0;
-	double fpisin = 0.0;
+	
 
 	int term_iteration = options->term_iteration; //needs to be shared
 	/* initialize m1 and m2 depending on algorithm */
@@ -309,17 +307,20 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 		m2 = 0;
 	}
 
-	if (options->inf_func == FUNC_FPISIN)
-	{
-		pih = PI * h;
-		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
-	}
-
 	int shared_go = 0;
 	int shared_iteration_done = 0; 
 
-	#pragma omp parallel num_threads(options->number + 1) default(none) private(options, results, arguments, i, j, pih, fpisin, star, residuum) shared(shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N)
+	#pragma omp parallel num_threads(options->number + 1) default(none) private(star, residuum) shared(options, results, arguments, shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N)
 	{
+
+		double pih = 0.0;
+		double fpisin = 0.0;
+
+		if (options->inf_func == FUNC_FPISIN)
+		{
+			pih = PI * h;
+			fpisin = 0.25 * TWO_PI_SQUARE * h * h;
+		}
 
 		int thread_id = omp_get_thread_num();
 
@@ -377,9 +378,9 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 
 					/* over all rows */
 					#pragma omp for collapse(2)
-					for (i = 1; i < N; i++)
+					for (int i = 1; i < N; i++)
 					{
-						for (j = 1; j < N; j++)
+						for (int j = 1; j < N; j++)
 						{
 
 							if(j == 1) {
