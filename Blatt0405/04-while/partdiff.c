@@ -29,6 +29,7 @@
 
 #include "partdiff.h"
 #include <pthread.h>
+#include <limits.h>
 
 struct calculation_arguments
 {
@@ -326,8 +327,8 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		t_data = malloc(sizeof(struct t_data));
 
 		t_data->N = N;
-		t_data->lock = 1;
 		t_data->mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;		
+		t_data->maxResiduum = 0;
 		t_data->arguments = arguments;
 		t_data->results = results;
 		t_data->options = options;
