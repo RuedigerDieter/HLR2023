@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <math.h>
-#include <malloc.h>
 #include <sys/time.h>
 
 #include "partdiff.h"
@@ -190,10 +189,12 @@ struct t_args
 struct t_data
 {
 	pthread_mutex_t mutex;
+	pthread_cond_t cond;
 	int lock;
 	uint64_t N;
 	double** Matrix_In;
 	double** Matrix_Out;
+	int lock_leave_count;
 	
 	double pih,fpisin;
 	double maxResiduum;
@@ -224,6 +225,7 @@ void* t_calculate (void * args)
 	double local_maxResiduum = 0;
 	double star = 0;
 	int term_iteration = options->term_iteration;
+	int thread_count = (int) options->number;
 
 	double fpisin_i = 0.0;
 
@@ -264,8 +266,37 @@ void* t_calculate (void * args)
 		}
 
 		pthread_mutex_lock(&t_data->mutex);
-		t_data->maxResiduum = (local_maxResiduum < t_data->maxResiduum) ? t_data->maxResiduum : local_maxResiduum;
+		t_data->maxResiduum = (local_maxResiduum < t_data->maxResiduum) ? t_data->maxResiduum : local_maxResiduum;		
+
+		if (t_data->lock_leave_count == 0)
+		{
+			pthread_cond_broadcast(&t_data->cond);
+
+		}
+		else
+		{
+			while (t_data->lock_leave_count > 0)
+			{
+				pthread_cond_wait(&t_data->cond, &t_data->mutex);
+			}
+		}
+		
 		results->stat_iteration++;
+		
+		if (results->stat_iteration % thread_count == 0)
+		{
+			t_data->lock_leave_count = thread_count;
+			pthread_cond_broadcast(&t_data->cond);
+
+		}
+		else
+		{
+			while (results->stat_iteration % thread_count != 0)
+			{
+				pthread_cond_wait(&t_data->cond, &t_data->mutex);
+			}
+		}
+		t_data->lock_leave_count--;
 		pthread_mutex_unlock(&t_data->mutex);
 
 		/* exchange m1 and m2 */
@@ -328,7 +359,8 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		t_data = malloc(sizeof(struct t_data));
 
 		t_data->N = N;
-		pthread_mutex_init(&t_data->mutex, NULL);		
+		pthread_mutex_init(&t_data->mutex, NULL);
+		pthread_cond_init(&t_data->cond, NULL);	
 		t_data->maxResiduum = 0;
 		t_data->arguments = arguments;
 		t_data->results = results;
