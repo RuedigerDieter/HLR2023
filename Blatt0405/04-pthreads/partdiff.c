@@ -414,6 +414,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		free(t_args);
 		free(t_data);
 		free(threads);
+		results->stat_iteration = results->stat_iteration / thread_count;
 	}
 	else
 	{
