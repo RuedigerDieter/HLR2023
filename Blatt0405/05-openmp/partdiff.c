@@ -276,166 +276,6 @@ calculate_old (struct calculation_arguments const* arguments, struct calculation
 	results->m = m2;
 }
 
-/* ************************************************************************ */
-/* calculate: solves the equation                                           */
-/* ************************************************************************ */
-/*
-static
-void
-calculate_old (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
-{
-	int m1, m2;         
-	double star;        
-	double residuum;   
-	double maxResiduum; 
-
-	int const N = arguments->N;
-	double const h = arguments->h;
-
-	int term_iteration = options->term_iteration; //needs to be shared
-	
-	if (options->method == METH_JACOBI)
-	{
-		m1 = 0;
-		m2 = 1;
-	}
-	else
-	{
-		m1 = 0;
-		m2 = 0;
-	}
-
-	int shared_go = 0;
-	int shared_iteration_done = 0; 
-
-	#pragma omp parallel num_threads(options->number + 1) default(none) private(star, residuum) shared(options, results, arguments, shared_go, shared_iteration_done, m1, m2, maxResiduum, term_iteration, N, h)
-	{
-
-		double pih = 0.0;
-		double fpisin = 0.0;
-
-		if (options->inf_func == FUNC_FPISIN)
-		{
-			pih = PI * h;
-			fpisin = 0.25 * TWO_PI_SQUARE * h * h;
-		}
-
-		int thread_id = omp_get_thread_num();
-
-		if(thread_id == 0){
-
-			while (term_iteration > 0)
-			{
-				
-				#pragma omp critical
-				{
-					maxResiduum = 0;
-					shared_iteration_done = 0;
-					shared_go = 1;
-					printf("[DEBUG] Set control signs\n");
-				}
-				
-				//calculate
-				while(1) {
-					if(shared_iteration_done == (int) options->number) {
-						printf("[DEBUG] break\n");
-						break;
-					}
-				}
-				//calculation done
-
-				results->stat_iteration++;
-				results->stat_precision = maxResiduum;
-
-				int o = m1;
-				m1 = m2;
-				m2 = o;
-
-				if (options->termination == TERM_PREC)
-				{
-					if (maxResiduum < options->term_precision)
-					{
-						term_iteration = 0;
-					}
-				}
-				else if (options->termination == TERM_ITER)
-				{
-					term_iteration--;
-				}
-			}
-
-		}else{
-			while(term_iteration > 0) {
-
-				if(shared_go) {
-
-					printf("[DEBUG] entered calculation\n");
-
-					double** Matrix_Out = arguments->Matrix[m1];
-					double** Matrix_In  = arguments->Matrix[m2];
-
-					double fpisin_i = 0.0;
-
-					#pragma omp for collapse(2)
-					for (int i = 1; i < N; i++)
-					{
-						for (int j = 1; j < N; j++)
-						{
-
-							printf("[DEBUG] %d,%d changed on %d\n", i, j, thread_id);
-
-							if(j == 1) {
-
-								fpisin_i = 0.0;
-
-								if (options->inf_func == FUNC_FPISIN)
-								{
-									fpisin_i = fpisin * sin(pih * (double)i);
-								}
-
-							}
-
-							star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
-
-							if (options->inf_func == FUNC_FPISIN)
-							{
-								star += fpisin_i * sin(pih * (double)j);
-							}
-
-							if (options->termination == TERM_PREC || term_iteration == 1)
-							{
-								residuum = Matrix_In[i][j] - star;
-								residuum = (residuum < 0) ? -residuum : residuum;
-
-								#pragma omp critical
-								{
-									maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
-								}
-							}
-
-							Matrix_Out[i][j] = star;
-						}
-					}
-
-					#pragma omp atomic
-					shared_iteration_done++;
-
-					printf("[DEBUG] shared_iteration_done incremented!\n");
-
-					#pragma omp single
-					{
-						printf("[DEBUG] shared_go=0 once!\n");
-						shared_go = 0;
-					}
-				}
-			}
-		}
-		
-	}
-
-	results->m = m2;
-}
-*/
 
 static
 void
@@ -450,32 +290,32 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 	int const N = arguments->N;
 	double const h = arguments->h;
 
-	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j,) shared(arguments, options, results, maxResiduum, N, h,  m1, m2)
+	double pih = 0.0;
+	double fpisin = 0.0;
+
+	if (options->method == METH_JACOBI)
 	{
+		m1 = 0;
+		m2 = 1;
+	}
+	else
+	{
+		m1 = 0;
+		m2 = 0;
+	}
 
-		double pih = 0.0;
-		double fpisin = 0.0;
+	if (options->inf_func == FUNC_FPISIN)
+	{	
+		pih = PI * h;
+		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
+	}
 
 
+	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j,) shared(arguments, options, results, maxResiduum, N, h,  m1, m2, pih, fpisin)
+	{
 		int term_iteration = options->term_iteration;
 
-		/* initialize m1 and m2 depending on algorithm */
-		if (options->method == METH_JACOBI)
-		{
-			m1 = 0;
-			m2 = 1;
-		}
-		else
-		{
-			m1 = 0;
-			m2 = 0;
-		}
-
-		if (options->inf_func == FUNC_FPISIN)
-		{
-			pih = PI * h;
-			fpisin = 0.25 * TWO_PI_SQUARE * h * h;
-		}
+		#pragma omp barrier			
 
 		double fpisin_i = 0.0;
 
@@ -489,14 +329,12 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 			/* over all rows */
 			#pragma omp for collapse(2)
 			for (i = 1; i < N; i++)
-			{
+			{	
 				for (j = 1; j < N; j++)
 				{
 					
 					if(j == 1){
-						
 						fpisin_i = 0.0;
-
 						if (options->inf_func == FUNC_FPISIN)
 						{
 							fpisin_i = fpisin * sin(pih * (double)i);
@@ -519,29 +357,21 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 						{
 							maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
 						}
-						
 					}
 
 					Matrix_Out[i][j] = star;
 				}
 			}
-
-			#pragma omp critical
+			#pragma omp single
 			{
 				results->stat_iteration++;
 				results->stat_precision = maxResiduum;
-			}
-			
-			#pragma omp single
-			{
-				/* exchange m1 and m2 */
+
 				i = m1;
 				m1 = m2;
 				m2 = i;
-			}
-			
-			/* check for stopping calculation depending on termination method */
-			if (options->termination == TERM_PREC)
+
+				if (options->termination)
 			{
 				if (maxResiduum < options->term_precision)
 				{
@@ -552,6 +382,9 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 			{
 				term_iteration--;
 			}
+			}
+			
+			#pragma omp barrier			
 		}
 	}
 
