@@ -24,7 +24,7 @@
 \text{Threads } &t \in \mathbb{N}\\
 \text{Berechenbare Reihen } &r = 8i + 9 \\
 T \in t &\rightarrow R_T \in r: \\
-R_T \in RR \\
+RR &= \{R_1, R_2, R_3, …, R_T\} \\
 \text{ jeder Thread kriegt eine Menge an Reihen}\\
 \text{(Ziffern in der Menge als Indizes der Reihen)}\\
 \end{align*}
@@ -34,7 +34,7 @@ R_T \in RR \\
             R_T = \{A + 1, A + 2, ..., A + (int) \frac{r}{t} \}\\
             \text{für } (r - 2)\mod t \neq 0: A = s.o.;\\
             \begin{cases}
-                \text{für }  \overline{RR} > ((r-2) \bmod t) \text{ s. Fall 1}\\
+                \text{für }  T > ((r-2) \bmod t) \text{ s. Fall 1}\\
                 \text{sonst  }
                 A = (\overline{R_{T-1}} + \overline{R_{T-2}} + ...);
             R_T = \{A + 1, A + 2, ..., A + (int) \frac{r}{t}, A + (int) \frac{r}{t} + 1 \}
