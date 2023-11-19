@@ -177,6 +177,9 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 	}
 }
 
+#ifndef ELEMENT
+#ifndef ZEILE
+#ifndef SPALTE
 static
 void
 calculate_old (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
@@ -275,8 +278,13 @@ calculate_old (struct calculation_arguments const* arguments, struct calculation
 
 	results->m = m2;
 }
+#endif
+#endif
+#endif
 
 
+
+#ifdef ELEMENT
 static
 void
 calculate_new (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
@@ -389,6 +397,238 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 
 	results->m = m2;
 }
+#endif
+
+#ifdef SPALTE
+static
+void
+calculate_new (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+{
+	int i, j;           /* local variables for loops */
+	int m1, m2;         /* used as indices for old and new matrices */
+	double star;        /* four times center value minus 4 neigh.b values */
+	double residuum;    /* residuum of current iteration */
+	double maxResiduum; /* maximum residuum value of a slave in iteration */
+
+	int const N = arguments->N;
+	double const h = arguments->h;
+
+	double pih = 0.0;
+	double fpisin = 0.0;
+
+	if (options->method == METH_JACOBI)
+	{
+		m1 = 0;
+		m2 = 1;
+	}
+	else
+	{
+		m1 = 0;
+		m2 = 0;
+	}
+
+	if (options->inf_func == FUNC_FPISIN)
+	{	
+		pih = PI * h;
+		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
+	}
+
+	int term_iteration = options->term_iteration;
+
+	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j,) shared(arguments, options, results, term_iteration, maxResiduum, N, h,  m1, m2, pih, fpisin)
+	{
+		#pragma omp barrier			
+
+		double fpisin_i = 0.0;
+
+		while (term_iteration > 0)
+		{
+			double** Matrix_Out = arguments->Matrix[m1];
+			double** Matrix_In  = arguments->Matrix[m2];
+
+			maxResiduum = 0;
+
+			/* over all rows */
+			#pragma omp parallel for schedule(static, 1)
+			for (i = 1; i < N; i++)
+			{	
+				for (j = 1; j < N; j++)
+				{
+					
+					if(j == 1){
+						fpisin_i = 0.0;
+						if (options->inf_func == FUNC_FPISIN)
+						{
+							fpisin_i = fpisin * sin(pih * (double)i);
+						}
+					}
+
+					star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+
+					if (options->inf_func == FUNC_FPISIN)
+					{
+						star += fpisin_i * sin(pih * (double)j);
+					}
+
+					if (options->termination == TERM_PREC || term_iteration == 1)
+					{
+						residuum = Matrix_In[i][j] - star;
+						residuum = (residuum < 0) ? -residuum : residuum;
+
+						#pragma omp critical
+						{
+							maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+						}
+					}
+
+					Matrix_Out[i][j] = star;
+				}
+			}
+			#pragma omp single
+			{
+				results->stat_iteration++;
+				results->stat_precision = maxResiduum;
+
+				i = m1;
+				m1 = m2;
+				m2 = i;
+
+				if (options->termination == TERM_PREC)
+				{
+					if (maxResiduum < options->term_precision)
+					{
+						term_iteration = 0;
+					}
+				}
+				else if (options->termination == TERM_ITER)
+				{
+					term_iteration--;
+				}
+
+			}
+			#pragma omp barrier		
+		}
+	}
+
+	results->m = m2;
+}
+#endif
+
+#ifdef ZEILE
+static
+void
+calculate_new (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+{
+	int i, j;           /* local variables for loops */
+	int m1, m2;         /* used as indices for old and new matrices */
+	double star;        /* four times center value minus 4 neigh.b values */
+	double residuum;    /* residuum of current iteration */
+	double maxResiduum; /* maximum residuum value of a slave in iteration */
+
+	int const N = arguments->N;
+	double const h = arguments->h;
+
+	double pih = 0.0;
+	double fpisin = 0.0;
+
+	if (options->method == METH_JACOBI)
+	{
+		m1 = 0;
+		m2 = 1;
+	}
+	else
+	{
+		m1 = 0;
+		m2 = 0;
+	}
+
+	if (options->inf_func == FUNC_FPISIN)
+	{	
+		pih = PI * h;
+		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
+	}
+
+	int term_iteration = options->term_iteration;
+
+	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j,) shared(arguments, options, results, term_iteration, maxResiduum, N, h,  m1, m2, pih, fpisin)
+	{
+		#pragma omp barrier			
+
+		double fpisin_i = 0.0;
+
+		while (term_iteration > 0)
+		{
+			double** Matrix_Out = arguments->Matrix[m1];
+			double** Matrix_In  = arguments->Matrix[m2];
+
+			maxResiduum = 0;
+
+			/* over all rows */
+			#pragma omp parallel for schedule(static, 1)
+			for (j = 1; j < N; j++)
+			{	
+				for (i = 1; i < N; i++)
+				{
+					
+					if(j == 1){
+						fpisin_i = 0.0;
+						if (options->inf_func == FUNC_FPISIN)
+						{
+							fpisin_i = fpisin * sin(pih * (double)i);
+						}
+					}
+
+					star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+
+					if (options->inf_func == FUNC_FPISIN)
+					{
+						star += fpisin_i * sin(pih * (double)j);
+					}
+
+					if (options->termination == TERM_PREC || term_iteration == 1)
+					{
+						residuum = Matrix_In[i][j] - star;
+						residuum = (residuum < 0) ? -residuum : residuum;
+
+						#pragma omp critical
+						{
+							maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+						}
+					}
+
+					Matrix_Out[i][j] = star;
+				}
+			}
+			#pragma omp single
+			{
+				results->stat_iteration++;
+				results->stat_precision = maxResiduum;
+
+				i = m1;
+				m1 = m2;
+				m2 = i;
+
+				if (options->termination == TERM_PREC)
+				{
+					if (maxResiduum < options->term_precision)
+					{
+						term_iteration = 0;
+					}
+				}
+				else if (options->termination == TERM_ITER)
+				{
+					term_iteration--;
+				}
+
+			}
+			#pragma omp barrier		
+		}
+	}
+
+	results->m = m2;
+}
+#endif
+
 
 /* ************************************************************************ */
 /*  displayStatistics: displays some statistics about the calculation       */
