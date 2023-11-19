@@ -373,17 +373,18 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 				m1 = m2;
 				m2 = i;
 
-				if (options->termination)
-			{
-				if (maxResiduum < options->term_precision)
+				if (options->termination == TERM_PREC)
 				{
-					term_iteration = 0;
+					if (maxResiduum < options->term_precision)
+					{
+						term_iteration = 0;
+					}
 				}
-			}
-			else if (options->termination == TERM_ITER)
-			{
-				term_iteration--;
-			}
+				else if (options->termination == TERM_ITER)
+				{
+					term_iteration--;
+				}
+
 			}
 			
 			printf("done \n");
