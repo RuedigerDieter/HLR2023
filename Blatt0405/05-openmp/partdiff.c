@@ -321,6 +321,8 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 
 		while (term_iteration > 0)
 		{
+			printf("iteration %d\n", term_iteration);
+
 			double** Matrix_Out = arguments->Matrix[m1];
 			double** Matrix_In  = arguments->Matrix[m2];
 
@@ -384,7 +386,10 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 			}
 			}
 			
-			#pragma omp barrier			
+			printf("done \n");
+			#pragma omp barrier		
+
+			printf("everyone done \n");	
 		}
 	}
 
