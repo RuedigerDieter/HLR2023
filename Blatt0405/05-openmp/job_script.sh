@@ -5,4 +5,4 @@
 #SBATCH -p west
 srun -N 3 -n 9 -p west partdiff.sh
 
-echo "fertig" >> partdiff.out
+echo "fertig" >> timescript.out
