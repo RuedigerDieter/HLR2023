@@ -310,11 +310,10 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
+	int term_iteration = options->term_iteration;
 
-	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j,) shared(arguments, options, results, maxResiduum, N, h,  m1, m2, pih, fpisin)
+	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j,) shared(arguments, options, results, term_iteration, maxResiduum, N, h,  m1, m2, pih, fpisin)
 	{
-		int term_iteration = options->term_iteration;
-
 		#pragma omp barrier			
 
 		double fpisin_i = 0.0;
