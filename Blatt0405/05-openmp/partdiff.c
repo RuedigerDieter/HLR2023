@@ -321,7 +321,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 
 		while (term_iteration > 0)
 		{
-			printf("iteration %d %d\n", term_iteration, pthread_self());
+			printf("iteration %d %d\n", term_iteration, omp_get_thread_num());
 
 			double** Matrix_Out = arguments->Matrix[m1];
 			double** Matrix_In  = arguments->Matrix[m2];
