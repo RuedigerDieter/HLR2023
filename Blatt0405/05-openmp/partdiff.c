@@ -177,9 +177,6 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 	}
 }
 
-#ifndef ELEMENT
-#ifndef ZEILE
-#ifndef SPALTE
 static
 void
 calculate_old (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
@@ -278,10 +275,6 @@ calculate_old (struct calculation_arguments const* arguments, struct calculation
 
 	results->m = m2;
 }
-#endif
-#endif
-#endif
-
 
 
 #ifdef ELEMENT
@@ -514,7 +507,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 }
 #endif
 
-#ifdef ZEILE
+#if defined(ZEILE) || (!defined(ELEMENT) && !defined(SPALTE)) // compiler gibt hier warnungen aus, die nicht stimmen.
 static
 void
 calculate_new (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
@@ -599,6 +592,7 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 					Matrix_Out[i][j] = star;
 				}
 			}
+			#pragma omp barrier		
 			#pragma omp single
 			{
 				results->stat_iteration++;
@@ -621,7 +615,6 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 				}
 
 			}
-			#pragma omp barrier		
 		}
 	}
 
