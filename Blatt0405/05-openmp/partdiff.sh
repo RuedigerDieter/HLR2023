@@ -1,2 +1,2 @@
 #!/bin/sh
-./partdiff-openmp 12 2 10 2 2 10
+./partdiff-openmp 12 2 512 2 2 1400
