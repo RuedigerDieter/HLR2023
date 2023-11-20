@@ -592,7 +592,8 @@ calculate_new (struct calculation_arguments const* arguments, struct calculation
 					Matrix_Out[i][j] = star;
 				}
 			}
-			#pragma omp barrier		
+			#pragma omp barrier	
+				
 			#pragma omp single
 			{
 				results->stat_iteration++;
