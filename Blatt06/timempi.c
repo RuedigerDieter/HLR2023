@@ -36,24 +36,41 @@ int main(void) {
 
     if(proc_id == proc_num - 1) 
     {
-        char** outputs = malloc(proc_num * sizeof(char) * 80);
+        char* proc_output = malloc(sizeof(char) * 80);
+        int proc_time = 0;
+
+        int us_min = micro_sec;
+        int us_max = micro_sec;
         for (int i = 0; i < proc_num; i++)
         {
-            MPI_Recv(outputs[i], 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
+            MPI_Recv(proc_output, 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            // TODO receive time
 
-        for (int i = 0; i < proc_num; i++)
-        {
-            printf("%s\n", outputs[i]);
+            for (int i = 0; i < proc_num; i++)
+            {
+                if (us_min > proc_time])
+                {
+                    us_min = proc_time;
+                }
+                else if (us_max < proc_time)
+                {
+                    us_max = proc_time;
+                }
+            }
+            // TODO: print string
         }
-        // TODO: print all strings
+       
+        printf("Kleinster uS-Anteil: %d\n", us_min);
+        printf("Größte Differenz: %d\n", us_max - us_min);
 
-        free(outputs);
+        free(output);
+
         MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
     else
     {
         MPI_Send(output, 80, MPI_CHAR, proc_num - 1, 0, MPI_COMM_WORLD);
+        // TODO send time as int to - 1
         MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
 
