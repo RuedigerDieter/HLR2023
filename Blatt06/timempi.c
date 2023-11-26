@@ -36,6 +36,7 @@ int main(void) {
 
     if(proc_id != proc_num - 1) 
     {
+        printf("%d\n", proc_id);
         MPI_Send(output, 80, MPI_CHAR, proc_num - 1, 0, MPI_COMM_WORLD);
         MPI_Send(&time, 1, MPI_LONG, proc_num - 1, 1, MPI_COMM_WORLD);
 
@@ -43,6 +44,7 @@ int main(void) {
     }
     else
     {
+        printf("%d\n", proc_id);
         char proc_output[80];
         time_t proc_time = 0;
 
