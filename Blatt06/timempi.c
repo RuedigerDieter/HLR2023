@@ -37,18 +37,18 @@ int main(void) {
     if(proc_id == proc_num - 1) 
     {
         char* proc_output = malloc(sizeof(char) * 80);
-        int proc_time = 0;
+        time_t proc_time = 0;
 
         int us_min = micro_sec;
         int us_max = micro_sec;
         for (int i = 0; i < proc_num; i++)
         {
             MPI_Recv(proc_output, 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            // TODO receive time
+            MPI_Recv(&proc_time, 1, MPI_LONG, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
             for (int i = 0; i < proc_num; i++)
             {
-                if (us_min > proc_time])
+                if (us_min > proc_time)
                 {
                     us_min = proc_time;
                 }
@@ -57,7 +57,9 @@ int main(void) {
                     us_max = proc_time;
                 }
             }
-            // TODO: print string
+            strftime(time_string, 30, "%Y-%m-%d %T", localtime(&time));
+            snprintf(proc_output, 80, "[%d] %s : %s.%d", i, hostname, time_string, (int)micro_sec);
+            printf("%s\n", proc_output);
         }
        
         printf("Kleinster uS-Anteil: %d\n", us_min);
@@ -70,7 +72,8 @@ int main(void) {
     else
     {
         MPI_Send(output, 80, MPI_CHAR, proc_num - 1, 0, MPI_COMM_WORLD);
-        // TODO send time as int to - 1
+        MPI_Send(&time, 1, MPI_LONG, proc_num - 1, 1, MPI_COMM_WORLD);
+
         MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
 
