@@ -28,22 +28,22 @@ int main(void) {
     time = tv.tv_sec;
     micro_sec = tv.tv_usec;
     
-    // strftime(time_string, 30, "%Y-%m-%d %T", localtime(&time));
-    // snprintf(output, 80, "%s : %s.%d", hostname, time_string, (int)micro_sec);
+    strftime(time_string, 30, "%Y-%m-%d %T", localtime(&time));
+    snprintf(output, 80, "%s : %s.%d", hostname, time_string, (int)micro_sec);
 
     // printf("%s\n", output);
     // printf("%d\n", (int)micro_sec);
 
     if(proc_id == proc_num - 1) 
     {
-        char* proc_output = malloc(sizeof(char) * 80);
+        char* proc_output[80];
         time_t proc_time = 0;
 
         int us_min = micro_sec;
         int us_max = micro_sec;
         for (int i = 0; i < proc_num; i++)
         {
-            MPI_Recv(proc_output, 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&proc_output, 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Recv(&proc_time, 1, MPI_LONG, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
             for (int i = 0; i < proc_num; i++)
@@ -57,15 +57,11 @@ int main(void) {
                     us_max = proc_time;
                 }
             }
-            strftime(time_string, 30, "%Y-%m-%d %T", localtime(&time));
-            snprintf(proc_output, 80, "[%d] %s : %s.%d", i, hostname, time_string, (int)micro_sec);
             printf("%s\n", proc_output);
         }
        
         printf("Kleinster uS-Anteil: %d\n", us_min);
         printf("Größte Differenz: %d\n", us_max - us_min);
-
-        free(proc_output);
 
         MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
