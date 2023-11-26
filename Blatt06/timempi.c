@@ -36,7 +36,7 @@ int main(void) {
 
     if(proc_id == proc_num - 1) 
     {
-        char* proc_output[80];
+        char proc_output[80];
         time_t proc_time = 0;
 
         int us_min = micro_sec;
