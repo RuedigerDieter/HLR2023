@@ -65,7 +65,7 @@ int main(void) {
         printf("Kleinster uS-Anteil: %d\n", us_min);
         printf("Größte Differenz: %d\n", us_max - us_min);
 
-        free(output);
+        free(proc_output);
 
         MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
