@@ -39,7 +39,7 @@ int main(void) {
         MPI_Send(output, 80, MPI_CHAR, proc_num - 1, 0, MPI_COMM_WORLD);
         MPI_Send(&time, 1, MPI_LONG, proc_num - 1, 1, MPI_COMM_WORLD);
 
-        //MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
+        MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
     else
     {
@@ -61,14 +61,14 @@ int main(void) {
             {
                 us_max = proc_time;
             }
-            
-            printf("%s\n", proc_output);
+
+            printf("[%d] %s\n", i, proc_output);
         }
        
         printf("Kleinster uS-Anteil: %d\n", us_min);
         printf("Größte Differenz: %d\n", us_max - us_min);
 
-        //MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
+        MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
 
     MPI_Finalize();
