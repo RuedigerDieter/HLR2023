@@ -52,18 +52,16 @@ int main(void) {
         {
             MPI_Recv(&proc_output, 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Recv(&proc_time, 1, MPI_LONG, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-            for (int i = 0; i < proc_num; i++)
+            
+            if (us_min > proc_time)
             {
-                if (us_min > proc_time)
-                {
-                    us_min = proc_time;
-                }
-                else if (us_max < proc_time)
-                {
-                    us_max = proc_time;
-                }
+                us_min = proc_time;
             }
+            else if (us_max < proc_time)
+            {
+                us_max = proc_time;
+            }
+            
             printf("%s\n", proc_output);
         }
        
