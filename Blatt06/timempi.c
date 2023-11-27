@@ -22,6 +22,8 @@ int main(void) {
     MPI_Comm_rank(MPI_COMM_WORLD, &proc_id);
     MPI_Comm_size(MPI_COMM_WORLD, &proc_num);
 
+    printf("Proc %d\n", proc_num);
+
     gettimeofday(&tv, NULL);
     gethostname(hostname, 30);
 
@@ -38,7 +40,8 @@ int main(void) {
     if(proc_id != proc_num - 1) 
     {
         MPI_Send(output, 80, MPI_CHAR, proc_num - 1, 0, MPI_COMM_WORLD);
-        MPI_Send(&time, 1, MPI_LONG, proc_num - 1, 1, MPI_COMM_WORLD);
+        MPI_Send(&micro_sec, 1, MPI_LONG, proc_num - 1, 1, MPI_COMM_WORLD);
+        printf("Sent Proc %d\n", proc_id);
 
         MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
@@ -49,11 +52,18 @@ int main(void) {
 
         int us_min = micro_sec;
         int us_max = micro_sec;
+        if(proc_num == 1)
+        {
+            printf("%s\n", output);
+            printf("%d\n", (int)micro_sec);
+            return 0;
+        }
         for (int i = 0; i < proc_num; i++)
         {
+            printf("Waiting for Proc %d\n", i);
             MPI_Recv(&proc_output, 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Recv(&proc_time, 1, MPI_LONG, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            
+            printf("Received Proc %d\n", i);
             if (us_min > proc_time)
             {
                 us_min = proc_time;
@@ -65,7 +75,9 @@ int main(void) {
 
             printf("[%d] %s\n", i, proc_output);
         }
-       
+
+
+
         printf("Kleinster uS-Anteil: %d\n", us_min);
         printf("Größte Differenz: %d\n", us_max - us_min);
 
