@@ -77,7 +77,7 @@ int main(void) {
 
         MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
-
+    printf("Beendet jetzt!\n");
     MPI_Finalize();
     return 0;
 }
