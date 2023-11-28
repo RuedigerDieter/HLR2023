@@ -35,31 +35,31 @@ int main(void) {
     {
         MPI_Send(output, 80, MPI_CHAR, proc_num - 1, 0, MPI_COMM_WORLD);
         MPI_Send(&micro_sec, 1, MPI_LONG, proc_num - 1, 1, MPI_COMM_WORLD);
-        printf("Sent Proc %d\n", proc_id);
+        // printf("Sent Proc %d\n", proc_id);
 
         MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
     else
     {
         char proc_output[80];
-        time_t proc_time = 0;
+        long proc_time = 0;
 
-        int us_min = micro_sec;
-        int us_max = micro_sec;
+        long us_min = micro_sec;
+        long us_max = micro_sec;
         if(proc_num == 1)
         {
             printf("%s\n", output);
             //printf("%d\n", (int)micro_sec);
 
-            printf("Kleinster uS-Anteil: %d\n", us_min);
-            printf("Größte Differenz: %d\n", us_max - us_min);
+            printf("Kleinster uS-Anteil: %ld\n", us_min);
+            printf("Größte Differenz: %ld\n", us_max - us_min);
 
             return 0;
         }
         for (int i = 0; i < proc_num - 1; i++)
         {
             MPI_Recv(&proc_output, 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Recv(&proc_time, 1, MPI_INT, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&proc_time, 1, MPI_LONG, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             if (us_min > proc_time)
             {
                 us_min = proc_time;
@@ -72,8 +72,8 @@ int main(void) {
             printf("[%d] %s\n", i, proc_output);
         }
 
-        printf("Kleinster uS-Anteil: %d\n", us_min);
-        printf("Größte Differenz: %d\n", us_max - us_min);
+        printf("Kleinster uS-Anteil: %ld\n", us_min);
+        printf("Größte Differenz: %ld\n", us_max - us_min);
 
         MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
