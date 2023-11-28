@@ -22,7 +22,7 @@ int main(void) {
     MPI_Comm_rank(MPI_COMM_WORLD, &proc_id);
     MPI_Comm_size(MPI_COMM_WORLD, &proc_num);
 
-    printf("Proc %d\n", proc_num);
+    printf("Proc %d\n", proc_id);
 
     gettimeofday(&tv, NULL);
     gethostname(hostname, 30);
@@ -36,7 +36,6 @@ int main(void) {
     // printf("%s\n", output);
     // printf("%d\n", (int)micro_sec);
 
-    printf("%d\n", proc_id);
     if(proc_id != proc_num - 1) 
     {
         MPI_Send(output, 80, MPI_CHAR, proc_num - 1, 0, MPI_COMM_WORLD);
@@ -55,7 +54,11 @@ int main(void) {
         if(proc_num == 1)
         {
             printf("%s\n", output);
-            printf("%d\n", (int)micro_sec);
+            //printf("%d\n", (int)micro_sec);
+
+            printf("Kleinster uS-Anteil: %d\n", us_min);
+            printf("Größte Differenz: %d\n", us_max - us_min);
+
             return 0;
         }
         for (int i = 0; i < proc_num - 1; i++)
