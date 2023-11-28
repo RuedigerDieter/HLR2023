@@ -73,11 +73,13 @@ int main(void) {
         }
 
         printf("Kleinster uS-Anteil: %ld\n", us_min);
+        //TODO: fixme (us_max - us_min) falsche zahlen
         printf("Größte Differenz: %ld\n", us_max - us_min);
 
         MPI_Bcast(NULL,0,MPI_INT,proc_num - 1, MPI_COMM_WORLD);
     }
-    printf("Beendet jetzt!\n");
+    MPI_Barrier(MPI_COMM_WORLD);
+    printf("[%d] Beendet jetzt!\n", proc_id);
     MPI_Finalize();
     return 0;
 }
