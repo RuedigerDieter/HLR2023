@@ -58,7 +58,7 @@ int main(void) {
             printf("%d\n", (int)micro_sec);
             return 0;
         }
-        for (int i = 0; i < proc_num; i++)
+        for (int i = 0; i < proc_num - 1; i++)
         {
             printf("Waiting for Proc %d\n", i);
             MPI_Recv(&proc_output, 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -75,8 +75,6 @@ int main(void) {
 
             printf("[%d] %s\n", i, proc_output);
         }
-
-
 
         printf("Kleinster uS-Anteil: %d\n", us_min);
         printf("Größte Differenz: %d\n", us_max - us_min);
