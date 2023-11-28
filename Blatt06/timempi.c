@@ -22,8 +22,6 @@ int main(void) {
     MPI_Comm_rank(MPI_COMM_WORLD, &proc_id);
     MPI_Comm_size(MPI_COMM_WORLD, &proc_num);
 
-    printf("Proc %d\n", proc_id);
-
     gettimeofday(&tv, NULL);
     gethostname(hostname, 30);
 
@@ -32,9 +30,6 @@ int main(void) {
     
     strftime(time_string, 30, "%Y-%m-%d %T", localtime(&time));
     snprintf(output, 80, "%s : %s.%d", hostname, time_string, (int)micro_sec);
-
-    // printf("%s\n", output);
-    // printf("%d\n", (int)micro_sec);
 
     if(proc_id != proc_num - 1) 
     {
@@ -63,10 +58,8 @@ int main(void) {
         }
         for (int i = 0; i < proc_num - 1; i++)
         {
-            printf("Waiting for Proc %d\n", i);
             MPI_Recv(&proc_output, 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Recv(&proc_time, 1, MPI_LONG, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            printf("Received Proc %d\n", i);
+            MPI_Recv(&proc_time, 1, MPI_INT, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             if (us_min > proc_time)
             {
                 us_min = proc_time;
