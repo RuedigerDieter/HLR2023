@@ -65,7 +65,7 @@ int main(void) {
         {
             printf("Waiting for Proc %d\n", i);
             MPI_Recv(&proc_output, 80, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Recv(&proc_time, 1, MPI_LONG, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&proc_time, 1, MPI_LONG, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             printf("Received Proc %d\n", i);
             if (us_min > proc_time)
             {
