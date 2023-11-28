@@ -6,12 +6,13 @@
 #include <sys/time.h>
 #include <time.h>
 #include <mpi.h>
+#include <limits.h>
 
 int main(void) {
 
     struct timeval tv;
     time_t time;
-    int micro_sec;
+    long micro_sec;
     char time_string[30];
     char output[80];
     char hostname[30];
@@ -26,7 +27,7 @@ int main(void) {
     gethostname(hostname, 30);
 
     time = tv.tv_sec;
-    micro_sec = tv.tv_usec;
+    micro_sec = (long) tv.tv_usec;
     
     strftime(time_string, 30, "%Y-%m-%d %T", localtime(&time));
     snprintf(output, 80, "%s : %s.%d", hostname, time_string, (int)micro_sec);
@@ -44,8 +45,8 @@ int main(void) {
         char proc_output[80];
         long proc_time = 0;
 
-        long us_min = micro_sec;
-        long us_max = micro_sec;
+        long us_min = LONG_MAX;
+        long us_max = LONG_MIN;
         if(proc_num == 1)
         {
             printf("%s\n", output);
