@@ -54,6 +54,7 @@ int main(void) {
 
             printf("Kleinster uS-Anteil: %ld\n", us_min);
             printf("Größte Differenz: %ld\n", us_max - us_min);
+            printf("[%d] Beendet jetzt!\n", proc_id);
 
             return 0;
         }
