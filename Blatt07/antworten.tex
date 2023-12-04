@@ -1,0 +1,35 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+
+%opening
+\title{Aufgabe 07}
+\author{Can Nayci, Leonhard Rattmann, Emil Sharaf}
+\date{09.12.2023}
+\begin{document}
+
+\maketitle
+
+\section{Circle}
+\begin{align*}
+ N &: \text{Anzahl der Elemente des Arrays} \\
+ n &: \text{Index des Elements} \\
+ nprocs &: \text{Anzahl der Prozesse} \\
+ start_p &: \text{erstes Element für Prozess } p\\
+ end_p &: \text{letztes Element für Prozess } p\\
+ \\
+ start_p(n) &= (int) n \cdot \frac{N}{nprocs}\\
+ end_p(n) &= (int) n \cdot \frac{N}{nprocs}
+\end{align*}\\
+für $N = 13, nprocs = 5$:
+\begin{tabular}{c | c}
+ Prozess & Array-Elemente \\
+ \hline
+ 0 & $0,1,2$\\
+ 1 & $3,4,5$\\
+ 2 & $6,7$\\
+ 3 & $8,9,10$\\
+ 4 & $11,12$\\
+\end{tabular}
+
+\end{document}
