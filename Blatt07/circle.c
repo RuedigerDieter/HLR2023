@@ -25,21 +25,38 @@ int
 circle (int* buf, int array_size, int rank)
 {
 	int* tmp;
+	int* firstbuf;
+	int b_iterate = 0;
 
 	tmp = (int*)malloc(sizeof(int) * array_size);
 
-	tmp = buf;
+	do
+	{
+		tmp = buf;
+		
+		if (rank % 2)
+		{
+			MPI_Ssend(buf, array_size, MPI_INT, 0, 0, MPI_COMM_WORLD);
+			MPI_Recv(buf, array_size, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		}
+		else
+		{
+			MPI_Recv(buf, array_size, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Ssend(tmp, array_size, MPI_INT, 0, 0, MPI_COMM_WORLD);
+		}
+		if (rank == world_size)
+		{
+			
+			b_iterate = (tmp[0] == firstbuf[0])? 1 : 0;
+			MPI_SSend(b_iterate, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+		}
+		else
+		{
+			MPI_Recv(b_iterate, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		}
+	} while (!b_iterate);
 	
-	if (rank % 2)
-	{
-		MPI_Ssend(buf, array_size, MPI_INT, 0, 0, MPI_COMM_WORLD);
-		MPI_Recv(buf, array_size, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	}
-	else
-	{
-		MPI_Recv(buf, array_size, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		MPI_Ssend(tmp, array_size, MPI_INT, 0, 0, MPI_COMM_WORLD);
-	}
+		
 	
 
 	return 0;
