@@ -80,18 +80,21 @@ main (int argc, char** argv)
 	if (rank == 0)
 	{
 		printf("\nBEFORE\n");
-		// TODO: print whole array
+		
 		for (int i = 0; i < proc_array_size; i++)
 		{
-			printf("rank %d: %d\n", i, buf[i]);
+			printf("rank 0: %d\n", buf[i]);
 		}
-		printf("rank 0: %d\n", buf[]);
+
 		for (int i = 1; i < world_size; i++)
 		{
-			// TODO: print whole array
 			MPI_Recv(buf, proc_array_size, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			for
-			printf("rank %d: %d\n", i, buf[i]);
+			printf("rank %d: ");
+			for (int j = 0; j < proc_array_size; j++)
+			{
+				printf(buf[j]);
+			}
+			printf("\n");
 		}
 
 		
@@ -100,15 +103,25 @@ main (int argc, char** argv)
 	{
 		MPI_Send(buf, proc_array_size, MPI_INT, 0, 0, MPI_COMM_WORLD);
 	}
-	ret = circle(buf);
+	ret = circle(buf, proc_array_size, rank);
 	if (rank == 0)
 	{
 		printf("\nAFTER\n");
 
+		for (int i = 0; i < proc_array_size; i++)
+		{
+			printf("rank 0: %d\n", buf[i]);
+		}
+
 		for (int i = 1; i < world_size; i++)
 		{
 			MPI_Recv(buf, proc_array_size, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			printf("rank %d: %d\n", i, buf[j]);
+			printf("rank %d: ");
+			for (int j = 0; j < proc_array_size; j++)
+			{
+				printf(buf[j]);
+			}
+			printf("\n");
 		}
 	}
 	else
