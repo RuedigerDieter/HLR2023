@@ -1,7 +1,8 @@
 \documentclass[a4paper,10pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
-\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{graphicx}
 
 %opening
 \title{Aufgabe 07}
@@ -35,6 +36,71 @@ für $N = 13, nprocs = 5$:
 \subsection{Communication Matrix View}
 \subsection{Programmphasen}
 \subsection{MPI\_Init}
+\newpage
 \section{Prallelisierung mit MPI}
+
+\begin{lstlisting}[language=C]
+ int n = Anzahl der Reihen;
+ int nprocs = Prozessanzahl;
+ n = (getInterlines() * 8) + 9 - 1;
+ int startIndex, endIndex;
+
+ nur Prozess 0:
+ {
+    int s_startIndex, s_endIndex;
+    int lpp, lpp_rest;
+
+    lpp = (int) (n - 1) / nprocs;
+    lpp_rest = (n - 1) % nprocs;
+
+    startIndex = 1 (0er-Reihe wird ignoriert);
+    endIndex = lpp + (lpp_rest < 0)? 1 : 0);
+    lpp_rest--;
+
+    s_startIndex = endIndex;
+    s_endIndex = 0;
+     fuer alle nprocs exkl. 0:
+    {
+        MPI_Ssend(*s_startIndex an Prozess i);
+        s_endIndex = startIndex + lpp;
+        if (lpp_rest < 0)
+        {
+            endIndex++;
+            lpp_rest--;
+        }
+        MPI_Ssend(*s_endIndex an Prozess i);
+        s_startIndex = s_endIndex;
+        // => startIndex ist inklusive, endIndex exklusive.
+    }
+ }
+
+ alle anderen Prozesse:
+ {
+    MPI_Recv(*startIndex);
+    MPI_Recv(*endIndex);
+ }
+
+\end{lstlisting}
+
+z.B. 64 Interlines, 4 Prozesse:
+\begin{align*}
+  & &n = 64 * 8 + 9 - 1 = 520\\
+  & &lpt = \frac{519}{4} = 129 \\
+  & &lpt\_rest = 3 \\
+ &\text{für Prozess 0: }
+ &startIndex = 1 \\
+ & &endIndex = 130 + 1\\
+ &\text{für Prozess 3: }
+ &startIndex = 262\\
+ & &endIndex = 391 + 1\\
+ &\text{für Prozess m:  }
+ &startIndex = 1 + m \cdot lpt + lpt\_rest \\
+  & &\text{nicht $(m - 1)$, weil Prozesse ab 0 nummeriert sind}\\
+ & &endIndex = 521\\
+\end{align*}
+\includegraphics[width=8cm]{Untitled.png}
+\subsection*{Kommunikation}
+1. Alle Prozesse außer 0 (bzw. 1) brauchen ihre Start- und endIndizes.
+2. Jeder Prozess braucht in jeder Iteration den oben und unten benachbarten Teil der Matrix.
 
 \end{document}
