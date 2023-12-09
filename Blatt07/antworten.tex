@@ -38,11 +38,25 @@ für $N = 13, nprocs = 5$:
  4 & $11,12$\\
 \end{tabular}
 
+
+%%
 \section{Visualisierung}
-\subsection{Richtung der Kommunikation}
-\subsection{Communication Matrix View}
-\subsection{Programmphasen}
-\subsection{MPI\_Init}
+\begin{itemize}
+    \item[1] \textbf{Grafische Darstellung der Kommunikation:}\\\\
+    \includegraphics[width=14cm]{GrafikKommunikation.png}
+    \item[2] \textbf{Communication Matrix View:}\\\\
+    \includegraphics[width=14cm]{CommunicationMatrixView1.png}\\
+    \includegraphics[width=14cm]{CommunicationMatrixView2.png}\\
+    \item[3]\textbf{Programmphasen:}\\\\
+    Die Phase bis $0,2747$ s stellt die Initialisierung dar. Die Iterationen werden in den nachfolgenden Screenshots als "grüne Phase" und das Beenden als "blaue Phase" dargestellt:\\\\
+    \includegraphics[width=14cm]{Init_1.png}\\
+    \includegraphics[width=14cm]{Init_2.png}\\
+    \includegraphics[width=14cm]{Init_3.png}\\
+    \includegraphics[width=14cm]{Init_4.png}\\
+    \item[4] \textbf{MPI-Init-Phase:}\\\\
+    Die MPI-Init-Phase dauerte $\thicksim 1,098$ s und nimmt somit ungefähr 99,7\% der Programmlaufzeit in Anspruch:\\\\
+    \includegraphics[width=14cm]{MPI_Init.png}
+\end{itemize}
 \newpage
 \section{Prallelisierung mit MPI}
 
@@ -110,23 +124,5 @@ z.B. 64 Interlines, 4 Prozesse:
 1. Alle Prozesse außer 0 (bzw. 1) brauchen ihre Start- und endIndizes.
 2. Jeder Prozess braucht in jeder Iteration den oben und unten benachbarten Teil der Matrix.
 
-%%
-\section{Visualisierung}
-\begin{itemize}
-    \item[1] \textbf{Grafische Darstellung der Kommunikation:}\\\\
-    \includegraphics[width=16cm]{GrafikKommunikation.png}
-    \item[2] \textbf{Communication Matrix View:}\\\\
-    \includegraphics[width=14cm]{CommunicationMatrixView1.png}\\
-    \includegraphics[width=14cm]{CommunicationMatrixView2.png}\\
-    \item[3]\textbf{Programmphasen:}\\\\
-    Die Phase bis $0,2747$ s stellt die Initialisierung dar. Die Iterationen werden in den nachfolgenden Screenshots als "grüne Phase" und das Beenden als "blaue Phase" dargestellt:\\\\
-    \includegraphics[width=14cm]{Init_1.png}\\
-    \includegraphics[width=14cm]{Init_2.png}\\
-    \includegraphics[width=14cm]{Init_3.png}\\
-    \includegraphics[width=14cm]{Init_4.png}\\
-    \item[4] \textbf{MPI-Init-Phase:}\\\\
-    Die MPI-Init-Phase dauerte $\thicksim 1,098$ s und nimmt somit ungefähr 99,7\% der Programmlaufzeit in Anspruch:\\\\
-    \includegraphics[width=14cm]{MPI_Init.png}
-\end{itemize}
 
 \end{document}
