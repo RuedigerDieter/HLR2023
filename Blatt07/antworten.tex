@@ -123,12 +123,11 @@ z.B. 64 Interlines, 4 Prozesse:
 \subsection*{Kommunikation}
 \begin{enumerate}
  \item Alle Prozesse außer 0 (bzw. 1) brauchen ihre Start- und endIndizes.
- \item Jeder Prozess braucht in jeder Iteration den oben ($z_{u}$) und unten ($z_o$) benachbarten Teil der Matrix. Angehängt ist die Nummer des Bereichs, die der Prozess bearbeitet (abgesehen von den Prozessen mit benachbarten 0er-Reihen).
- \item Jeder Prozess sendet am Anfang einer Iteration seine von anderen Prozessen benötigten Halolines und fragt am Anfang die obere benötigte Haloline ab, am Ende die untere.
- \item Wenn genug Iterationen durchgeführt wurden, brechen die Prozesse eigenständig ab.
+ \item Jeder Prozess braucht in jeder Iteration den oben ($z_{u}$) und unten ($z_o$) benachbarten Teil der Matrix. Angehängt ist die Nummer des Bereichs, die der Prozess bearbeitet.
+ \item Jeder Prozess sendet am Anfang einer Iteration seine von anderen Prozessen benötigten Halolines und fragt entweder am Anfang die obere benötigt Haloline ab, am Ende die untere.
+ \item Bei Abbruch=Iteration: Wenn genug Iterationen durchgeführt wurden brechen die Prozesse eigenständig ab. 
+ \item Bei Abbruch=Genauigkeit: Jede Iteration wird unnötiger Weise maxResiduum zu p0 gesendet und p0 lässt alle abbrechen, wenn Präzision erreicht ist. Unnötig, weil theoretisch jeder Prozess selbst überwachen kann, ob die nötige Präzision erreicht ist.
  \item Am Ende (wenn alle Iterationen fertig sind) sendet jeder Prozess seine Matrix an Prozess 0 (bzw. 1), der das Ergebnis ausgeben kann. Außerdem schickt jeder Prozess sein MaxResiduum ($M$) an Prozess 0 (bzw. 1).
 \end{enumerate}
 \includegraphics[width=14cm]{Comms.png}
-
-Eine Unnötigkeit bei oben beschriebenem Prozess ist, dass jeder Prozess zu jeder Iteration sein MaxResiduum an p0 schickt, damit der Präzisions-Abbruch korrekt geschehen kann. Dies kann umgangen werden, indem jeder Prozess dies eigenständig überprüüft.
 \end{document}
