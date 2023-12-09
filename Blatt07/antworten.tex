@@ -15,10 +15,17 @@
 \section{Circle}
 \begin{align*}
  N &: \text{Anzahl der Elemente des Arrays} \\
- n &: \text{Index des Elements} \\
  nprocs &: \text{Anzahl der Prozesse} \\
  start_p &: \text{erstes Element für Prozess } p\\
  end_p &: \text{letztes Element für Prozess } p\\
+ start_0 &= 1 \\
+ end_p &= p \cdot (int) \frac{N}{nprocs} + a\\
+ a &=
+ \begin{cases}
+    \text{wenn }((N \bmod nprocs) < p) : 0\\
+    \text{sonst} : 1\\
+ \end{cases}\\
+ start_p &= end_{p-1}\\
 \end{align*}\\
 für $N = 13, nprocs = 5$:
 \begin{tabular}{c | c}
