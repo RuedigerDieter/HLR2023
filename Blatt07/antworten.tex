@@ -123,9 +123,10 @@ z.B. 64 Interlines, 4 Prozesse:
 \subsection*{Kommunikation}
 \begin{enumerate}
  \item Alle Prozesse außer 0 (bzw. 1) brauchen ihre Start- und endIndizes.
- \item Jeder Prozess braucht in jeder Iteration den oben ($z_{u}$) und unten ($z_o$) benachbarten Teil der Matrix.
+ \item Jeder Prozess braucht in jeder Iteration den oben ($z_{u}$) und unten ($z_o$) benachbarten Teil der Matrix. Angehängt ist die Nummer des Bereichs, die der Prozess bearbeitet.
+ \item Jeder Prozess sendet am Anfang einer Iteration seine von anderen Prozessen benötigten Halolines und fragt entweder am Anfang die obere benötigt Haloline ab, am Ende die untere.
  \item Wenn genug Iterationen durchgeführt wurden brechen die Prozesse eigenständig ab. Wenn die Genauigkeit hoch genug ist, sendet der entsprechende Prozess den anderen ein Abbruchsignal.
- \item Am Ende sendet jeder Prozess seine Matrix an Prozess 0 (bzw. 1), der das Ergebnis ausgeben kann. Außerdem schickt jeder Prozess sein MaxResiduum ($M$) an Prozess 0 (bzw. 1).
+ \item Am Ende (wenn alle Iterationen fertig sind) sendet jeder Prozess seine Matrix an Prozess 0 (bzw. 1), der das Ergebnis ausgeben kann. Außerdem schickt jeder Prozess sein MaxResiduum ($M$) an Prozess 0 (bzw. 1).
 \end{enumerate}
 \includegraphics[width=14cm]{Comms.png}
 
