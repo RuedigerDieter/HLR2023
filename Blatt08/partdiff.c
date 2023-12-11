@@ -212,6 +212,19 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
+
+	/**
+	 * TODO:
+	 * 	While loop auslagern
+	 * 	Iterationen aufteilen
+	 * 	Halo-Lines kommunizieren
+	 *  Abbruchbedingungen prüfen
+	 *  
+	 * 	Ende: 	MaxRes anzeigen
+	 * 			Iterationen ausrechnen?
+	 * 			Endmatrix zusammenfügen
+	*/
+
 	while (term_iteration > 0)
 	{
 		double** Matrix_Out = arguments->Matrix[m1];
