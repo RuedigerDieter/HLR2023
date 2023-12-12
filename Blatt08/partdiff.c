@@ -219,6 +219,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	 * 	Iterationen aufteilen
 	 * 	Halo-Lines kommunizieren
 	 *  Abbruchbedingungen prüfen
+	 *  struct verschicken
 	 *  
 	 * 	Ende: 	MaxRes anzeigen
 	 * 			Iterationen ausrechnen?
