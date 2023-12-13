@@ -57,11 +57,11 @@ struct timeval comp_time;  /* time when calculation completed                */
 
 struct process_args
 {
-	int rank;
-	int world_size;
-	int starting_line;
-	int working_lines;
-	int working_columns;
+	uint64_t rank;
+	uint64_t world_size;
+	uint64_t starting_line;
+	uint64_t working_lines;
+	uint64_t working_columns;
 };
 
 /* ************************************************************************ */
