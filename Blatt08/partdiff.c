@@ -590,7 +590,7 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 		int should_i_send = translated_line >= proc_args->starting_line && translated_line < proc_args->starting_line + proc_args->working_lines; 
 
 		//every process that has a line needed to be printed, sends it to process 0, if it is not process 0 itself, since process 0 has his lines
-		if(should_i_send && rank != 0) {
+		if(should_i_send && proc_args->rank != 0) {
 			MPI_Ssend(arguments->Matrix[results->m][translated_line - proc_args->starting_line], proc_args->working_columns, MPI_DOUBLE, 0, 100 + y, MPI_COMM_WORLD);
 		}
 
@@ -645,7 +645,7 @@ main (int argc, char** argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-	if(options->method == METH_GAUSS_SEIDEL || world_size == 1) {
+	if(options.method == METH_GAUSS_SEIDEL || world_size == 1) {
 		if(rank == 0) {
 
 			allocateMatrices(&arguments);
