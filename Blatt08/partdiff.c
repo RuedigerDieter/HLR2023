@@ -350,7 +350,7 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 
 static
 void
-calculateMPI (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+calculateMPI (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_args* proc_args)
 {
 	int i, j;           /* local variables for loops */
 	int m1 = 0;		 	//direkt gesetzt weil jacobi 
