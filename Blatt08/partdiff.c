@@ -645,7 +645,7 @@ main (int argc, char** argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-	if(options.method == METH_GAUSS_SEIDEL || world_size == 1) {
+	if(options.method == METH_GAUSS_SEIDEL || world_size == 1) {
 		if(rank == 0) {
 
 			allocateMatrices(&arguments);
