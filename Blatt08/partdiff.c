@@ -303,7 +303,7 @@ allocateMatricesMPI (struct calculation_arguments* arguments, struct process_arg
 	proc_args->working_lines = lpp + (proc_args->rank < lpp_rest ? 1 : 0);
 
 	int starting_line = 0;
-	for(int x = 0; x < rank; x++) {
+	for(int x = 0; x < proc_args->rank; x++) {
 		starting_line += lpp + (x < lpp_rest ? 1 : 0);
 	}
 	proc_args->starting_line = starting_line;
@@ -407,13 +407,13 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 			if(i == 0) {
 
 				if(proc_args->rank != 0) {
-					MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
 
 				if(proc_args->rank != world_size-1) {
-					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
 			}
 
