@@ -634,6 +634,10 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 int
 main (int argc, char** argv)
 {
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
 	struct options options;
 	struct calculation_arguments arguments;
 	struct calculation_results results;
@@ -644,10 +648,6 @@ main (int argc, char** argv)
 
 	int rank, world_size;
 	
-	MPI_Init(&argc, &argv);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-
 	if(options.method == METH_GAUSS_SEIDEL || world_size == 1) {
 		if(rank == 0) {
 

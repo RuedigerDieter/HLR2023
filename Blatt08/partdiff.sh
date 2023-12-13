@@ -1,2 +1,2 @@
 #!/bin/sh
-mpirun ./partdiff 10 2 10 2 2 5
+mpirun -n 4 ./partdiff 10 2 10 2 2 5
