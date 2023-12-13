@@ -333,7 +333,6 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 {
 	uint64_t g, i, j; /* local variables for loops */
 
-	double const h = arguments->h;
 	double*** Matrix = arguments->Matrix;
 
 	/* initialize matrix/matrices with zeros */
