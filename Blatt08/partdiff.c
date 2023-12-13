@@ -663,11 +663,11 @@ main (int argc, char** argv)
 		}
 	}else {
 
-		if(rank < arguments->N-1) {
+		if(rank < arguments.N-1) {
 
 			struct process_args proc_args;
 		
-			proc_args.world_size = world_size <= arguments->N-1 ? world_size : arguments->N-1;
+			proc_args.world_size = world_size <= arguments.N-1 ? world_size : arguments.N-1;
 			proc_args.rank = rank;
 
 			allocateMatricesMPI(&arguments, &proc_args);
