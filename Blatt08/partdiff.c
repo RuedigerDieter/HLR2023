@@ -27,6 +27,8 @@
 #include <malloc.h>
 #include <sys/time.h>
 
+#include <mpi.h>
+
 #include "partdiff.h"
 
 struct calculation_arguments
@@ -404,12 +406,12 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 		{
 			if(i == 0) {
 
-				if(rank != 0) {
+				if(proc_args->rank != 0) {
 					MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
 
-				if(rank != world_size-1) {
+				if(proc_args->rank != world_size-1) {
 					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 					MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}

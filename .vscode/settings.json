@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "atomic": "c",
-        "partdiff.h": "c"
+        "partdiff.h": "c",
+        "time.h": "c"
     }
 }
