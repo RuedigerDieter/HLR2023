@@ -643,7 +643,8 @@ main (int argc, char** argv)
 	initVariables(&arguments, &results, &options);
 
 	int rank, world_size;
-
+	
+	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
@@ -693,6 +694,8 @@ main (int argc, char** argv)
 		}
 
 	}
+
+	MPI_Finalize();
 
 	return 0;
 }
