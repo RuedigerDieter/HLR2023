@@ -610,7 +610,7 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 					printf ("0");
 				}else{
 					if(should_i_send){
-						 printf ("%7.4f", arguments->Matrix[results->m][translated_line - proc_args->starting_line][x * (interlines + 1)]);
+						printf ("%7.4f", arguments->Matrix[results->m][translated_line - proc_args->starting_line][x * (interlines + 1)]);
 					}else{
 						printf ("%7.4f", line_in[x * (interlines + 1)]);
 					}
