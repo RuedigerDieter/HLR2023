@@ -329,7 +329,7 @@ allocateMatricesMPI (struct calculation_arguments* arguments, struct process_arg
 /* ************************************************************************ */
 static
 void
-initMatricesMPI (struct calculation_arguments* arguments, struct options const* options, struct process_args* proc_args)
+initMatricesMPI (struct calculation_arguments* arguments, struct process_args* proc_args)
 {
 	uint64_t g, i, j; /* local variables for loops */
 
@@ -673,7 +673,7 @@ main (int argc, char** argv)
 			proc_args.rank = rank;
 
 			allocateMatricesMPI(&arguments, &proc_args);
-			initMatricesMPI(&arguments, &options, &proc_args);
+			initMatricesMPI(&arguments, &proc_args);
 
 			if(rank == 0){
 				gettimeofday(&start_time, NULL);
