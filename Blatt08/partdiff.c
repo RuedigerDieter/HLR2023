@@ -297,13 +297,13 @@ allocateMatricesMPI (struct calculation_arguments* arguments, struct process_arg
 
 	uint64_t const N = arguments->N;
 
-	int lpp = N / proc_args->world_size; // lines per process
-	int lpp_rest = N % proc_args->world_size; // rest lines per process
+	uint64_t lpp = N / proc_args->world_size; // lines per process
+	uint64_t lpp_rest = N % proc_args->world_size; // rest lines per process
 
 	proc_args->working_lines = lpp + (proc_args->rank < lpp_rest ? 1 : 0);
 
-	int starting_line = 0;
-	for(int x = 0; x < proc_args->rank; x++) {
+	uint64_t starting_line = 0;
+	for(uint64_t x = 0; x < proc_args->rank; x++) {
 		starting_line += lpp + (x < lpp_rest ? 1 : 0);
 	}
 	proc_args->starting_line = starting_line;
