@@ -408,11 +408,11 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 
 				if(proc_args->rank != 0) {
 					MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD);
 				}
 
 				if(proc_args->rank != proc_args->world_size-1) {
-					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 20, MPI_COMM_WORLD);
 					MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
 			}
