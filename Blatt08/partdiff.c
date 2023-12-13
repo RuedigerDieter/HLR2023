@@ -28,7 +28,6 @@
 #include <sys/time.h>
 
 #include "partdiff.h"
-#include "displaymatrix-mpi.c"
 
 struct calculation_arguments
 {
