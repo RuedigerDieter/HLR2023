@@ -401,7 +401,7 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 		maxResiduum = 0;
 		
 		/* over all rows */
-		for (i = 0; i < proc_args->working_lines; i++)
+		for (i = 0; i < (int) proc_args->working_lines; i++)
 		{
 			if(i == 0) {
 
@@ -425,13 +425,13 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 			}
 
 			/* over all columns */
-			for (j = 0; j < proc_args->working_columns; j++)
+			for (j = 0; j < (int) proc_args->working_columns; j++)
 			{
 
 				double a = (i == 0) ? haloline_in_top[j] : Matrix_In[i-1][j];
 				double b = (j == 0) ? 0 : Matrix_In[i][j-1];
-				double c = (j == proc_args->working_columns-1) ? 0 : Matrix_In[i][j+1];
-				double d = (i == proc_args->working_lines-1) ? haloline_in_bottom[j] : Matrix_In[i+1][j];
+				double c = (j == (int) proc_args->working_columns-1) ? 0 : Matrix_In[i][j+1];
+				double d = (i == (int) proc_args->working_lines-1) ? haloline_in_bottom[j] : Matrix_In[i+1][j];
 
 				star = 0.25 * (a + b + c + d);
 
@@ -586,7 +586,7 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 		int translated_line = line-1; //since we have a 0 line at the beginning which is not recognized by every processes' matrix
 
 		//is the line being printed part of my processes' matrix?
-		int should_i_send = translated_line >= proc_args->starting_line && translated_line < proc_args->starting_line + proc_args->working_lines; 
+		int should_i_send = translated_line >= (int) proc_args->starting_line && translated_line < (int) (proc_args->starting_line + proc_args->working_lines); 
 
 		//every process that has a line needed to be printed, sends it to process 0, if it is not process 0 itself, since process 0 has his lines
 		if(should_i_send && proc_args->rank != 0) {
@@ -665,11 +665,11 @@ main (int argc, char** argv)
 		}
 	}else {
 
-		if(rank < arguments.N-1) {
+		if(rank < (int) arguments.N-1) {
 
 			struct process_args proc_args;
 		
-			proc_args.world_size = world_size <= arguments.N-1 ? world_size : arguments.N-1;
+			proc_args.world_size = world_size <= (int) arguments.N-1 ? (uint64_t) world_size : arguments.N-1;
 			proc_args.rank = rank;
 
 			allocateMatricesMPI(&arguments, &proc_args);
