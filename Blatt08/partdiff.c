@@ -289,7 +289,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 /* ************************************************************************ */
 static
 void
-allocateMatricesMPI (struct calculation_arguments* arguments, struct process_args proc_args)
+allocateMatricesMPI (struct calculation_arguments* arguments, struct process_args* proc_args)
 {
 	uint64_t i, j;
 
