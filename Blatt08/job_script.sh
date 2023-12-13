@@ -3,6 +3,6 @@
 #SBATCH -n 1                     
 #SBATCH -o job.out
 #SBATCH -p west
-srun west partdiff.sh
+srun -N 1 -n 1 west partdiff.sh
 
 echo "fertig" >> job.out
