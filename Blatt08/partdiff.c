@@ -599,9 +599,7 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 			double line_in[proc_args->working_columns + 2];
 			line_in[0] = 0;
 			line_in[proc_args->working_columns + 1] = 0;
-			if(should_i_send){ //i have the line myself
-				line_in = arguments->Matrix[results->m][translated_line - proc_args->starting_line];
-			}else{ //need the line from other process
+			if(!should_i_send){ //need the line from other process
 				MPI_Recv(line_in + 1, proc_args->working_columns, MPI_DOUBLE, MPI_ANY_SOURCE, 100 + y, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			}
 
@@ -611,7 +609,12 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 				if(y == 0 || y == 8) {
 					printf ("0");
 				}else{
-					printf ("%7.4f", line_in[x * (interlines + 1)]);
+					if(should_i_send){
+						 printf ("%7.4f", arguments->Matrix[results->m][translated_line - proc_args->starting_line][x * (interlines + 1)]);
+					}else{
+						printf ("%7.4f", line_in[x * (interlines + 1)]);
+					}
+					
 				}
 				
 			}
