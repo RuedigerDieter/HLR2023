@@ -28,6 +28,7 @@
 #include <sys/time.h>
 
 #include "partdiff.h"
+#include "displaymatrix-mpi.c"
 
 struct calculation_arguments
 {
@@ -53,6 +54,14 @@ struct calculation_results
 struct timeval start_time; /* time when program started                      */
 struct timeval comp_time;  /* time when calculation completed                */
 
+struct process_args
+{
+	int rank;
+	int world_size;
+	int starting_line;
+	int working_lines;
+	int working_columns;
+};
 
 /* ************************************************************************ */
 /* initVariables: Initializes some global variables                         */
@@ -212,20 +221,6 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
-
-	/**
-	 * TODO:
-	 * 	While loop auslagern
-	 * 	Iterationen aufteilen
-	 * 	Halo-Lines kommunizieren
-	 *  Abbruchbedingungen prüfen
-	 *  struct verschicken
-	 *  
-	 * 	Ende: 	MaxRes anzeigen
-	 * 			Iterationen ausrechnen?
-	 * 			Endmatrix zusammenfügen
-	*/
-
 	while (term_iteration > 0)
 	{
 		double** Matrix_Out = arguments->Matrix[m1];
@@ -288,6 +283,202 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 
 	results->m = m2;
 }
+
+
+/* ************************************************************************ */
+/* allocateMatrices: allocates memory for matrices                          */
+/* ************************************************************************ */
+static
+void
+allocateMatricesMPI (struct calculation_arguments* arguments, struct process_args proc_args)
+{
+	uint64_t i, j;
+
+	uint64_t const N = arguments->N;
+
+	uint64_t lpp = N / world_size; // lines per process
+	uint64_t lpp_rest = N % world_size; // rest lines per process
+
+	proc_args->working_lines = lpp + (rank < lpp_rest ? 1 : 0);
+
+	int starting_line = 0;
+	for(int x = 0; x < rank; x++) {
+		starting_line += lpp + (x < lpp_rest ? 1 : 0);
+	}
+	proc_args->starting_line = starting_line;
+
+	proc_args->working_columns = arguments->N-1;
+
+	arguments->M = allocateMemory(arguments->num_matrices * proc_args->working_lines * proc_args->working_columns * sizeof(double));
+	arguments->Matrix = allocateMemory(arguments->num_matrices * sizeof(double**));
+
+	for (i = 0; i < arguments->num_matrices; i++)
+	{
+		arguments->Matrix[i] = allocateMemory(proc_args->working_lines * sizeof(double*));
+
+		for (j = 0; j <= proc_args->working_lines; j++)
+		{
+			arguments->Matrix[i][j] = arguments->M + (i * proc_args->working_lines * proc_args->working_columns) + (j * proc_args->working_columns);
+		}
+	}
+}
+
+/* ************************************************************************ */
+/* initMatrices: Initialize matrix/matrices and some global variables       */
+/* ************************************************************************ */
+static
+void
+initMatricesMPI (struct calculation_arguments* arguments, struct options const* options, struct process_args* proc_args)
+{
+	uint64_t g, i, j; /* local variables for loops */
+
+	double const h = arguments->h;
+	double*** Matrix = arguments->Matrix;
+
+	/* initialize matrix/matrices with zeros */
+	for (g = 0; g < arguments->num_matrices; g++)
+	{
+		for (i = 0; i < proc_args->working_lines; i++)
+		{
+			for (j = 0; j < proc_args->working_columns; j++)
+			{
+				Matrix[g][i][j] = 0.0;
+			}
+		}
+	}
+}
+
+
+static
+void
+calculateMPI (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+{
+	int i, j;           /* local variables for loops */
+	int m1 = 0;		 	//direkt gesetzt weil jacobi 
+	int m2 = 1;         /* used as indices for old and new matrices */
+	double star;        /* four times center value minus 4 neigh.b values */
+	double residuum;    /* residuum of current iteration */
+	double maxResiduum; /* maximum residuum value of a slave in iteration */
+
+	double const h = arguments->h;
+
+	double pih = 0.0;
+	double fpisin = 0.0;
+
+	int term_iteration = options->term_iteration;
+
+	if (options->inf_func == FUNC_FPISIN)
+	{
+		pih = PI * h;
+		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
+	}
+
+	/**
+	 * TODO:
+	 * 	While loop auslagern
+	 * 	Iterationen aufteilen
+	 * 	Halo-Lines kommunizieren
+	 *  Abbruchbedingungen prüfen
+	 *  struct verschicken
+	 *  
+	 * 	Ende: 	MaxRes anzeigen
+	 * 			Iterationen ausrechnen?
+	 * 			Endmatrix zusammenfügen
+	*/
+
+	double global_maxResiduum = 0;
+
+	while (term_iteration > 0)
+	{
+		double** Matrix_Out = arguments->Matrix[m1];
+		double** Matrix_In  = arguments->Matrix[m2];
+
+		double haloline_in_top[proc_args->working_columns];
+		double haloline_in_bottom[proc_args->working_columns];
+		double *haloline_out_top = Matrix_In[0];
+		double *haloline_out_bottom = Matrix_In[proc_args->working_lines-1];
+
+		maxResiduum = 0;
+		
+		/* over all rows */
+		for (i = 0; i < proc_args->working_lines; i++)
+		{
+			if(i == 0) {
+
+				if(rank != 0) {
+					MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				}
+
+				if(rank != world_size-1) {
+					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				}
+			}
+
+			double fpisin_i = 0.0;
+
+			if (options->inf_func == FUNC_FPISIN)
+			{
+				int translated_i = i + proc_args->starting_line + 1; //+1 for the 0 line at the beginning
+				fpisin_i = fpisin * sin(pih * (double)(translated_i+1)); //fixed offset
+			}
+
+			/* over all columns */
+			for (j = 0; j < proc_args->working_columns; j++)
+			{
+
+				double a = (i == 0) ? haloline_in_top[j] : Matrix_In[i-1][j];
+				double b = (j == 0) ? 0 : Matrix_In[i][j-1];
+				double c = (j == proc_args->working_columns-1) ? 0 : Matrix_In[i][j+1];
+				double d = (i == proc_args->working_lines-1) ? haloline_in_bottom[j] : Matrix_In[i+1][j];
+
+				star = 0.25 * (a + b + c + d);
+
+				if (options->inf_func == FUNC_FPISIN)
+				{
+					star += fpisin_i * sin(pih * (double)(j+1)); //fixed offset
+				}
+
+				if (options->termination == TERM_PREC || term_iteration == 1)
+				{
+					residuum = Matrix_In[i][j] - star;
+					residuum = (residuum < 0) ? -residuum : residuum;
+					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+				}
+
+				Matrix_Out[i][j] = star;
+			}
+		}
+
+		MPI_Allreduce(&maxResiduum, &global_maxResiduum, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+		results->stat_iteration++;
+		results->stat_precision = maxResiduum;
+
+		/* exchange m1 and m2 */
+		i = m1;
+		m1 = m2;
+		m2 = i;
+
+		/* check for stopping calculation depending on termination method */
+		if (options->termination == TERM_PREC)
+		{
+			//changed the condition to global_maxResiduum
+			if (global_maxResiduum < options->term_precision)
+			{
+				term_iteration = 0;
+			}
+		}
+		else if (options->termination == TERM_ITER)
+		{
+			term_iteration--;
+		}
+	}
+
+	results->m = m2;
+}
+
 
 /* ************************************************************************ */
 /*  displayStatistics: displays some statistics about the calculation       */
@@ -378,6 +569,62 @@ displayMatrix (struct calculation_arguments* arguments, struct calculation_resul
 	fflush (stdout);
 }
 
+static
+void
+displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, struct process_args* proc_args)
+{
+	int x, y;
+
+	int const interlines = options->interlines;
+
+	printf("Matrix:\n");
+
+	for (y = 0; y < 9; y++)
+	{
+		//we need Matrix[y * (interlines + 1)]
+		int line = y * (interlines + 1);
+		int translated_line = line-1; //since we have a 0 line at the beginning which is not recognized by every processes' matrix
+
+		//is the line being printed part of my processes' matrix?
+		int should_i_send = translated_line >= proc_args->starting_line && translated_line < proc_args->starting_line + proc_args->working_lines; 
+
+		//every process that has a line needed to be printed, sends it to process 0, if it is not process 0 itself, since process 0 has his lines
+		if(should_i_send && rank != 0) {
+			MPI_Ssend(arguments->Matrix[results->m][translated_line - proc_args->starting_line], proc_args->working_columns, MPI_DOUBLE, 0, 100 + y, MPI_COMM_WORLD);
+		}
+
+		if(proc_args->rank == 0) {
+
+			double line_in[proc_args->working_columns + 2];
+			line_in[0] = 0;
+			line_in[proc_args->working_columns + 1] = 0;
+			if(should_i_send){ //i have the line myself
+				line_in = arguments->Matrix[results->m][translated_line - proc_args->starting_line];
+			}else{ //need the line from other process
+				MPI_Recv(line_in + 1, proc_args->working_columns, MPI_DOUBLE, MPI_ANY_SOURCE, 100 + y, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+
+			for (x = 0; x < 9; x++)
+			{
+				
+				if(y == 0 || y == 8) {
+					printf ("0");
+				}else{
+					printf ("%7.4f", line_in[x * (interlines + 1)]);
+				}
+				
+			}
+
+		printf ("\n");
+
+		}
+	}
+
+	if(proc_args->rank == 0){
+		fflush (stdout);
+	}	
+}
+
 /* ************************************************************************ */
 /*  main                                                                    */
 /* ************************************************************************ */
@@ -392,17 +639,57 @@ main (int argc, char** argv)
 
 	initVariables(&arguments, &results, &options);
 
-	allocateMatrices(&arguments);
-	initMatrices(&arguments, &options);
+	int rank, world_size;
 
-	gettimeofday(&start_time, NULL);
-	calculate(&arguments, &results, &options);
-	gettimeofday(&comp_time, NULL);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-	displayStatistics(&arguments, &results, &options);
-	displayMatrix(&arguments, &results, &options);
+	if(options->method == METH_GAUSS_SEIDEL) {
+		if(rank == 0) {
 
-	freeMatrices(&arguments);
+			allocateMatrices(&arguments);
+			initMatrices(&arguments, &options);
+
+			gettimeofday(&start_time, NULL);
+			calculate(&arguments, &results, &options);
+			gettimeofday(&comp_time, NULL);
+
+			displayStatistics(&arguments, &results, &options);
+			displayMatrix(&arguments, &results, &options);
+
+			freeMatrices(&arguments);
+
+		}
+	}else {
+
+		if(rank < arguments->N-1) {
+
+			struct process_args proc_args;
+		
+			proc_args.world_size = world_size <= arguments->N-1 ? world_size : arguments->N-1;
+			proc_args.rank = rank;
+
+			allocateMatricesMPI(&arguments, &proc_args);
+			initMatricesMPI(&arguments, &options, &proc_args);
+
+			if(rank == 0){
+				gettimeofday(&start_time, NULL);
+			}
+
+			calculateMPI(&arguments, &results, &options, &proc_args);
+
+			if(rank == 0) {
+				gettimeofday(&comp_time, NULL);
+				displayStatistics(&arguments, &results, &options);
+			}
+
+			displayMatrixMPI(&arguments, &results, &options, &proc_args);
+			
+			freeMatrices(&arguments);
+
+		}
+
+	}
 
 	return 0;
 }
