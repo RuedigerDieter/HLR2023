@@ -373,26 +373,22 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
-	/**
-	 * TODO:
-	 * 	While loop auslagern
-	 * 	Iterationen aufteilen
-	 * 	Halo-Lines kommunizieren
-	 *  Abbruchbedingungen prüfen
-	 *  struct verschicken
-	 *  
-	 * 	Ende: 	MaxRes anzeigen
-	 * 			Iterationen ausrechnen?
-	 * 			Endmatrix zusammenfügen
-	*/
-
 	double global_maxResiduum = 0;
+
+	printf("Rank %d entering calculation\n", proc_args->rank);
 
 	while (term_iteration > 0)
 	{
 		double** Matrix_Out = arguments->Matrix[m1];
 		double** Matrix_In  = arguments->Matrix[m2];
 
+
+		/**
+		 * haloline_in_top:		Die Zeile der Matrix, die über dem zu berechnenden Bereich liegt.
+		 * haloline_in_bottom:	Die Zeile der Matrix, die unter dem zu berechnenden Bereich liegt.
+		 * haloline_out_top:	Die Zeile der Matrix, die dem Prozess davor geschickt werden muss.
+		 * haloline_out_bottom:	Die Zeile der Matrix, die dem Prozess danach geschickt werden muss.
+		*/	
 		double haloline_in_top[proc_args->working_columns];
 		double haloline_in_bottom[proc_args->working_columns];
 		double *haloline_out_top = Matrix_In[0];
@@ -400,34 +396,64 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 
 		maxResiduum = 0;
 		
+		printf("Rank %d entering iteration %d\n", proc_args->rank, term_iteration);
+
 		/* over all rows */
 		for (i = 0; i < (int) proc_args->working_lines; i++)
 		{
 			if(i == 0) {
-
-				if(proc_args->rank != 0) {
+				
+				if(proc_args->rank == 0) 
+				{
+					// printf("Rank %d sending top line\n", proc_args->rank);
+					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 10, MPI_COMM_WORLD);
+				}
+				else if (proc_args->rank == proc_args->world_size -1)
+				{
 					MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD);
+				}
+				else 
+				{
+					// printf("Rank %d sending top line\n", proc_args->rank);
+					MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 10, MPI_COMM_WORLD);
 				}
 
-				if(proc_args->rank != proc_args->world_size-1) {
-					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 20, MPI_COMM_WORLD);
-					MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 20, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				// printf("Rank %d done sending top line\n", proc_args->rank);
+
+				if(proc_args->rank == 0) 
+				{
+					MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank + 1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
+				else if (proc_args->rank == proc_args->world_size -1)
+				{
+
+					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank - 1, 10, MPI_COMM_WORLD);
+				}
+				else 
+				{
+					printf("Rank %d sending top line\n", proc_args->rank);
+					MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank + 1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank - 1, 10, MPI_COMM_WORLD);
+				}
+				printf("Rank %d done sending/receiving Halolines\n", proc_args->rank);
 			}
-
 			double fpisin_i = 0.0;
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
 				int translated_i = i + proc_args->starting_line + 1; //+1 for the 0 line at the beginning
 				fpisin_i = fpisin * sin(pih * (double)(translated_i+1)); //fixed offset
+				printf("Rank %d fpisin_i: %f\n", proc_args->rank, fpisin_i);
 			}
 
 			/* over all columns */
 			for (j = 0; j < (int) proc_args->working_columns; j++)
 			{
-
+				/**
+				 * Belege die Werte für a,b,c,d mit den Werten aus der Matrix.
+				 * 0 wenn Randzeilen/-spalten
+				*/
 				double a = (i == 0) ? haloline_in_top[j] : Matrix_In[i-1][j];
 				double b = (j == 0) ? 0 : Matrix_In[i][j-1];
 				double c = (j == (int) proc_args->working_columns-1) ? 0 : Matrix_In[i][j+1];
@@ -576,54 +602,105 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 	int x, y;
 
 	int const interlines = options->interlines;
+	double* line = malloc(sizeof(double) * proc_args->working_columns);
 
-	printf("Matrix:\n");
-
-	for (y = 0; y < 9; y++)
+	if (proc_args->rank == 0) 
 	{
-		//we need Matrix[y * (interlines + 1)]
-		int line = y * (interlines + 1);
-		int translated_line = line-1; //since we have a 0 line at the beginning which is not recognized by every processes' matrix
-
-		//is the line being printed part of my processes' matrix?
-		int should_i_send = translated_line >= (int) proc_args->starting_line && translated_line < (int) (proc_args->starting_line + proc_args->working_lines); 
-
-		//every process that has a line needed to be printed, sends it to process 0, if it is not process 0 itself, since process 0 has his lines
-		if(should_i_send && proc_args->rank != 0) {
-			MPI_Ssend(arguments->Matrix[results->m][translated_line - proc_args->starting_line], proc_args->working_columns, MPI_DOUBLE, 0, 100 + y, MPI_COMM_WORLD);
-		}
-
-		if(proc_args->rank == 0) {
-
-			double line_in[proc_args->working_columns + 2];
-			line_in[0] = 0;
-			line_in[proc_args->working_columns + 1] = 0;
-			if(!should_i_send){ //need the line from other process
-				MPI_Recv(line_in + 1, proc_args->working_columns, MPI_DOUBLE, MPI_ANY_SOURCE, 100 + y, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		printf("Matrix:\n");
+		for (y = 0; y < 9; y++)
+		{
+			line[0] = 0;
+			line[proc_args->working_columns + 1] = 0;
+			// line to be printed.
+			int line_index = y * (interlines + 1);
+			
+			/**
+			 * Frage alle Prozesse nach der Zeile. Der Prozess, der sie berechnet hat, antwortet mit der Zeile.
+			*/
+			if ( y != 8 && (line_index >= proc_args->starting_line) && (line_index < (proc_args->starting_line + proc_args->working_lines) ))
+			{
+				line = arguments->Matrix[results->m][line_index - proc_args->starting_line];
 			}
-
+			else if (y != 8)
+			{
+				MPI_Bcast(&line_index, 1, MPI_INT, 0, MPI_COMM_WORLD);
+				MPI_Recv(line, proc_args->working_columns, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
 			for (x = 0; x < 9; x++)
 			{
-				
-				if(y == 0 || y == 8) {
-					printf ("0");
-				}else{
-					if(should_i_send){
-						printf ("%7.4f", arguments->Matrix[results->m][translated_line - proc_args->starting_line][x * (interlines + 1)]);
-					}else{
-						printf ("%7.4f", line_in[x * (interlines + 1)]);
-					}
-					
+				if(y == 0 || y == 8 || x == 0 || x == 8) 
+				{
+					printf ("%7.4f\t", 0);
 				}
-				
+				else
+				{
+					printf ("%7.4f\t", line[x * (interlines + 1)]);
+				}
 			}
-
-		printf ("\n");
-
+			printf ("\n");
 		}
 	}
+	else
+	{
+		for (int i = 0; i < 9; i++)
+		{
+			int line;
+			MPI_Bcast(&line, 1, MPI_INT, 0, MPI_COMM_WORLD);
+			if (line >= proc_args->starting_line 
+			&& line < proc_args->starting_line + proc_args->working_lines)
+			{
+				printf("Rank %d sending line %d\n", proc_args->rank, line);
+				MPI_Ssend(arguments->Matrix[results->m][line - proc_args->starting_line], proc_args->working_columns, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+			}
+		}
+	}
+		
 
-	if(proc_args->rank == 0){
+		// /**
+		//  * 
+		// */
+		// // is the line being printed part of my processes' matrix?
+		// int should_i_send = (translated_line >= (int) proc_args->starting_line) 
+		// && (translated_line < (int) (proc_args->starting_line + proc_args->working_lines)); 
+
+		// /**
+		//  * Für alle Prozesse wird die Benötigte Zeile an Prozess 0 gesendet. Prozess 0 weiß seine eigenen Zeilen, weshalb er diese nicht verschickt.
+		// */
+		// if(should_i_send && proc_args->rank != 0) {
+		// 	MPI_Ssend(arguments->Matrix[results->m][translated_line - proc_args->starting_line], proc_args->working_columns, MPI_DOUBLE, 0, 100 + y, MPI_COMM_WORLD);
+		// }
+
+		// if(proc_args->rank == 0) {
+		// 	printf("Matrix:\n");
+		// 	double line_in[proc_args->working_columns + 2];
+		// 	line_in[0] = 0;
+		// 	line_in[proc_args->working_columns + 1] = 0;
+		// 	if(!should_i_send){ //need the line from other process
+		// 		MPI_Recv(line_in + 1, proc_args->working_columns, MPI_DOUBLE, MPI_ANY_SOURCE, 100 + y, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		// 	}
+
+		// 	for (x = 0; x < 9; x++)
+		// 	{
+				
+		// 		if(y == 0 || y == 8) {
+		// 			printf ("0");
+		// 		}else{
+		// 			if(should_i_send){
+		// 				printf ("%7.4f", arguments->Matrix[results->m][translated_line - proc_args->starting_line][x * (interlines + 1)]);
+		// 			}else{
+		// 				printf ("%7.4f", line_in[x * (interlines + 1)]);
+		// 			}
+					
+		// 		}
+				
+		// 	}
+
+		// printf ("\n");
+		// }
+	// }
+
+	if(proc_args->rank == 0)
+	{
 		fflush (stdout);
 	}	
 }
@@ -634,10 +711,7 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 int
 main (int argc, char** argv)
 {
-	MPI_Init(&argc, &argv);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-
+	
 	struct options options;
 	struct calculation_arguments arguments;
 	struct calculation_results results;
@@ -647,6 +721,10 @@ main (int argc, char** argv)
 	initVariables(&arguments, &results, &options);
 
 	int rank, world_size;
+
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 	
 	if(options.method == METH_GAUSS_SEIDEL || world_size == 1) {
 		if(rank == 0) {
