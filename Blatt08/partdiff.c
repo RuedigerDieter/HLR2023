@@ -450,10 +450,24 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 				 * Belege die Werte für a,b,c,d mit den Werten aus der Matrix.
 				 * 0 wenn Randzeilen/-spalten
 				*/
-				double a = (i == 0) ? haloline_in_top[j] : Matrix_In[i-1][j];
+				double a;
+				if(proc_args->rank != 0) {
+					a = (i == 0) ? haloline_in_top[j] : Matrix_In[i-1][j];
+				}
+				else {
+					a = (i == 0) ? 0 : Matrix_In[i-1][j];
+				}
+
 				double b = (j == 0) ? 0 : Matrix_In[i][j-1];
 				double c = (j == (int) proc_args->working_columns-1) ? 0 : Matrix_In[i][j+1];
-				double d = (i == (int) proc_args->working_lines-1) ? haloline_in_bottom[j] : Matrix_In[i+1][j];
+
+				double d;
+				if(proc_args->rank != proc_args->world_size -1) {
+					d = (i == (int) proc_args->working_lines-1) ? haloline_in_bottom[j] : Matrix_In[i+1][j];
+				}
+				else {
+					d = (i == (int) proc_args->working_lines-1) ? 0 : Matrix_In[i+1][j];
+				}
 
 				star = 0.25 * (a + b + c + d);
 
