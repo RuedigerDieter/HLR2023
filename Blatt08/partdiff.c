@@ -374,6 +374,8 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 	}
 
 	double global_maxResiduum = 0;
+	
+	printf("Rank %d working on lines %d to %d\n", proc_args->rank, proc_args->starting_line, proc_args->starting_line + proc_args->working_lines - 1);
 
 	while (term_iteration > 0)
 	{
@@ -604,14 +606,19 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 
 	if (proc_args->rank == 0) 
 	{
+		/**
+		 * TODO: Eigentlich braucht man kein Offset, wenn niemand weiß, dass 0er-Reihen existieren?
+		*/
+		uint64_t line_index;
+		uint64_t line_offset;	
 		printf("Matrix:\n");
 		for (y = 0; y < 9; y++)
 		{
 			line[0] = 0;
 			line[proc_args->working_columns + 1] = 0;
 			// line to be printed.
-			int line_index = y * (interlines + 1);
-			
+			line_index = y * (interlines + 1);
+
 			/**
 			 * Frage alle Prozesse nach der Zeile. Der Prozess, der sie berechnet hat, antwortet mit der Zeile.
 			*/
@@ -621,6 +628,7 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 			}
 			else if (y < 8)
 			{
+				// printf("Searching for line %d\n", line_index);
 				MPI_Bcast(&line_index, 1, MPI_INT, 0, MPI_COMM_WORLD);
 				MPI_Recv(line, proc_args->working_columns, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			}
@@ -632,7 +640,7 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 			{
 				if(y == 0 || y == 8 || x == 0 || x == 8) 
 				{
-					printf ("%7.4f\t", 0);
+					printf ("%7.4f\t", 0.0);
 				}
 				else
 				{
@@ -641,28 +649,41 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 			}
 			printf ("\n");
 		}
+
+		/**
+		 * Terminierungssignal, damit die Prozesse wissen, dass sie terminieren sollen und nicht weiter auf einen Broadcast warten.
+		 * Potentiell problematisch, da so nicht die UINT_64_MAX Zeile übertragen werden kann. Praktisch allerdings nicht relevant.
+		*/
 		int terminate = -1;
+		printf("Sending termination signal\n");
 		MPI_Bcast(&terminate, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		fflush (stdout);
-		
 	}
 	else
 	{
 		/**
 		 * Frage alle Prozesse nach der Zeile. Der Prozess, der sie berechnet hat, antwortet mit der Zeile.
 		*/
+		int start = (int) proc_args->starting_line;
+		int end = (int) proc_args->starting_line + (int) proc_args->working_lines;
+
+		int line = 0;
+		int termination = -1;
 		while (1)
 		{
-			int line;
 			MPI_Bcast(&line, 1, MPI_INT, 0, MPI_COMM_WORLD);
-			if (line == -1 && line >= proc_args->starting_line + proc_args->working_lines)
+
+			
+			if (line >= start
+			&& line < end)
 			{
-				break;
+				//printf("Rank %d sending line %d\n", proc_args->rank, line);
+				MPI_Ssend(arguments->Matrix[results->m][line - start], proc_args->working_columns, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 			}
-			else if (line >= proc_args->starting_line 
-			&& line < proc_args->starting_line + proc_args->working_lines)
+			else if (line == termination)
 			{
-				MPI_Ssend(arguments->Matrix[results->m][line - proc_args->starting_line], proc_args->working_columns, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+				printf("Rank %d terminating. Current line: %d, Range: %d - %d\n", proc_args->rank, line, proc_args->starting_line, proc_args->starting_line + proc_args->working_lines);
+				break;
 			}
 		}
 	}
@@ -731,8 +752,7 @@ main (int argc, char** argv)
 			}
 
 			displayMatrixMPI(&arguments, &results, &options, &proc_args);
-			
-			printf("Rank %d returning to main\n", rank);
+			printf("Rank %d back at main\n", rank);
 			freeMatrices(&arguments);
 
 		}
