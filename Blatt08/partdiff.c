@@ -501,7 +501,8 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 	results->m = m2;
 
 	/**
-	 * FIXME: Ergebnisse sind noch falsch, evtl Randzeilen?
+	 * FIXME: Ergebnisse sind noch falsch, evtl Randzeilen?#
+	 * FIXME: Teilweise nan-Ergebnisse
 	*/
 }
 
