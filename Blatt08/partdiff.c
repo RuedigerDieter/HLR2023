@@ -615,15 +615,19 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 			/**
 			 * Frage alle Prozesse nach der Zeile. Der Prozess, der sie berechnet hat, antwortet mit der Zeile.
 			*/
-			if ( y != 8 && (line_index >= proc_args->starting_line) && (line_index < (proc_args->starting_line + proc_args->working_lines) ))
+			if ( y < 8 && (line_index >= proc_args->starting_line) && (line_index < (proc_args->starting_line + proc_args->working_lines) ))
 			{
 				line = arguments->Matrix[results->m][line_index - proc_args->starting_line];
 			}
-			else if (y < 7)
+			else if (y < 8)
 			{
 				MPI_Bcast(&line_index, 1, MPI_INT, 0, MPI_COMM_WORLD);
 				MPI_Recv(line, proc_args->working_columns, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			}
+
+			/**
+			 * Zeige die Matrix an. 0-Fälle, da die o.g. Matrizen ohne Randzeilen arbeiten.
+			*/
 			for (x = 0; x < 9; x++)
 			{
 				if(y == 0 || y == 8 || x == 0 || x == 8) 
@@ -637,39 +641,32 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 			}
 			printf ("\n");
 		}
+		int terminate = -1;
+		MPI_Bcast(&terminate, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		fflush (stdout);
+		
 	}
 	else
 	{
 		/**
-		 * FIXME
-		 * Deadlock hier irgendwo, wahrscheinlich beim warten auf den broadcast
-		*/
-		/**
 		 * Frage alle Prozesse nach der Zeile. Der Prozess, der sie berechnet hat, antwortet mit der Zeile.
 		*/
-		for (int i = 0; i < 9; i++)
+		while (1)
 		{
-			if (i == 8)
-			{
-				return;
-			}
 			int line;
-			//printf("Rank %d waiting for line %d\n", proc_args->rank,i);
 			MPI_Bcast(&line, 1, MPI_INT, 0, MPI_COMM_WORLD);
-			//printf("Rank %d received line %d\n", proc_args->rank, i);
-			if (line >= proc_args->starting_line 
+			if (line == -1 && line >= proc_args->starting_line + proc_args->working_lines)
+			{
+				break;
+			}
+			else if (line >= proc_args->starting_line 
 			&& line < proc_args->starting_line + proc_args->working_lines)
 			{
-				printf("Rank %d has line %d\n", proc_args->rank, line);
 				MPI_Ssend(arguments->Matrix[results->m][line - proc_args->starting_line], proc_args->working_columns, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 			}
 		}
 	}
 		
-	if(proc_args->rank == 0)
-	{
-		fflush (stdout);
-	}	
 }
 
 /* ************************************************************************ */
