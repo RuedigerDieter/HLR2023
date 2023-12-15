@@ -27,6 +27,7 @@
 #include <sys/time.h>
 
 #include <mpi.h>
+#include <omp.h>
 
 #include "partdiff.h"
 
@@ -374,7 +375,7 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 
 	double global_maxResiduum = 0;
 	
-	printf("Rank %d working on lines %d to %d\n", proc_args->rank, proc_args->starting_line, proc_args->starting_line + proc_args->working_lines - 1);
+	// printf("Rank %d working on lines %d to %d\n", proc_args->rank, proc_args->starting_line, proc_args->starting_line + proc_args->working_lines - 1);
 
 	while (term_iteration > 0)
 	{
@@ -446,7 +447,7 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 			for (j = 0; j < (int) proc_args->working_columns; j++)
 			{
 				/**
-				 *Belege die Werte für a,b,c,d mit den Werten aus der Matrix.
+				 * Belege die Werte für a,b,c,d mit den Werten aus der Matrix.
 				 * 0 wenn Randzeilen/-spalten
 				*/
 				double a;
@@ -513,10 +514,6 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 
 	results->m = m2;
 
-	/**
-	 * FIXME: Ergebnisse sind noch falsch, evtl Randzeilen?#
-	 * FIXME: Teilweise nan-Ergebnisse
-	*/
 }
 
 
@@ -620,9 +617,6 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 
 	if (proc_args->rank == 0) 
 	{
-		/**
-		 * TODO: Eigentlich braucht man kein Offset, wenn niemand weiß, dass 0er-Reihen existieren?
-		*/
 		uint64_t line_index;
 		uint64_t line_offset;	
 		printf("Matrix:\n");
@@ -665,11 +659,11 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 		}
 
 		/**
-		 * Terminierungssignal, damit die Prozesse wissen, dass sie terminieren sollen und nicht weiter auf einen Broadcast warten.
-		 * Potentiell problematisch, da so nicht die UINT_64_MAX Zeile übertragen werden kann. Praktisch allerdings nicht relevant.
+		 * Terminierungssignal als unmögliche Zeile. Könnte Probleme mit Uint64_t geben, ist aber innerhalb einer realisitischen Anzahl an Zeilen
+		 * unwahrscheinlich.
 		*/
 		int terminate = -1;
-		printf("Sending termination signal\n");
+		// printf("Sending termination signal\n");
 		MPI_Bcast(&terminate, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		fflush (stdout);
 	}
@@ -696,7 +690,7 @@ displayMatrixMPI (struct calculation_arguments* arguments, struct calculation_re
 			}
 			else if (line == termination)
 			{
-				printf("Rank %d terminating. Current line: %d, Range: %d - %d\n", proc_args->rank, line, proc_args->starting_line, proc_args->starting_line + proc_args->working_lines);
+				// printf("Rank %d terminating. Current line: %d, Range: %d - %d\n", proc_args->rank, line, proc_args->starting_line, proc_args->starting_line + proc_args->working_lines);
 				break;
 			}
 		}
