@@ -3,7 +3,8 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/Library/Developer/CommandLineTools/SDKs/MacOSX14.0.sdk/usr/include/malloc"
             ],
             "defines": [],
             "macFrameworkPath": [

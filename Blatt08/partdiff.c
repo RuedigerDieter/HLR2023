@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <math.h>
-#include <malloc.h>
 #include <sys/time.h>
 
 #include <mpi.h>
@@ -447,7 +446,7 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 			for (j = 0; j < (int) proc_args->working_columns; j++)
 			{
 				/**
-				 * Belege die Werte für a,b,c,d mit den Werten aus der Matrix.
+				 *Belege die Werte für a,b,c,d mit den Werten aus der Matrix.
 				 * 0 wenn Randzeilen/-spalten
 				*/
 				double a;
@@ -490,7 +489,7 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 		MPI_Allreduce(&maxResiduum, &global_maxResiduum, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
 		results->stat_iteration++;
-		results->stat_precision = maxResiduum;
+		results->stat_precision = global_maxResiduum;
 
 		/* exchange m1 and m2 */
 		i = m1;
