@@ -374,143 +374,188 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 	}
 
 	double global_maxResiduum = 0;
+
+	/**
+	 * haloline_in_top:		Die Zeile der Matrix, die über dem zu berechnenden Bereich liegt.
+	 * haloline_in_bottom:	Die Zeile der Matrix, die unter dem zu berechnenden Bereich liegt.
+	*/
+	double haloline_in_top[proc_args->working_columns];
+	double haloline_in_bottom[proc_args->working_columns];
 	
 	// printf("Rank %d working on lines %d to %d\n", proc_args->rank, proc_args->starting_line, proc_args->starting_line + proc_args->working_lines - 1);
-
-	while (term_iteration > 0)
+	#ifdef _OPENMP
+	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j) shared(haloline_in_top, haloline_in_bottom, arguments, options, results, term_iteration, maxResiduum, global_maxResiduum, N, h,  m1, m2, pih, fpisin)
 	{
-		double** Matrix_Out = arguments->Matrix[m1];
-		double** Matrix_In  = arguments->Matrix[m2];
-
+	#endif
 
 		/**
-		 * haloline_in_top:		Die Zeile der Matrix, die über dem zu berechnenden Bereich liegt.
-		 * haloline_in_bottom:	Die Zeile der Matrix, die unter dem zu berechnenden Bereich liegt.
-		 * haloline_out_top:	Die Zeile der Matrix, die dem Prozess davor geschickt werden muss.
-		 * haloline_out_bottom:	Die Zeile der Matrix, die dem Prozess danach geschickt werden muss.
-		*/	
-		double haloline_in_top[proc_args->working_columns];
-		double haloline_in_bottom[proc_args->working_columns];
-		double *haloline_out_top = Matrix_In[0];
-		double *haloline_out_bottom = Matrix_In[proc_args->working_lines-1];
-
-		maxResiduum = 0;
-		
-		/* over all rows */
-		for (i = 0; i < (int) proc_args->working_lines; i++)
+		 * define fpisin_i here, since it is used in the inner loop.
+		*/
+		double fpisin_i = 0.0;
+		while (term_iteration > 0)
 		{
-			if(i == 0) {
-				/**
-				 * Kommuniziere die obere Haloline, wobei der erste Prozess hier deadlock brechen soll.
-				*/
-				if(proc_args->rank == 0) 
-				{
-					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 10, MPI_COMM_WORLD);
-				}
-				else if (proc_args->rank == proc_args->world_size -1)
-				{
-					MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-				}
-				else 
-				{
-					MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 10, MPI_COMM_WORLD);
-				}
+			double** Matrix_Out = arguments->Matrix[m1];
+			double** Matrix_In  = arguments->Matrix[m2];
+			
 
-				/**
-				 * Kommuniziere die untere Haloline, wobei der letzte Prozess hier deadlock brechen soll.
-				*/
+			/**
+			 * haloline_out_top:	Die Zeile der Matrix, die dem Prozess davor geschickt werden muss.
+			 * haloline_out_bottom:	Die Zeile der Matrix, die dem Prozess danach geschickt werden muss.
+			*/	
+			
+			double *haloline_out_top = Matrix_In[0];
+			double *haloline_out_bottom = Matrix_In[proc_args->working_lines-1];
 
-				if(proc_args->rank == 0) 
-				{
-					MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank + 1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-				}
-				else if (proc_args->rank == proc_args->world_size -1)
-				{
-					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank - 1, 10, MPI_COMM_WORLD);
-				}
-				else 
-				{
-					MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank + 1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank - 1, 10, MPI_COMM_WORLD);
-				}
-			}
-			double fpisin_i = 0.0;
+			maxResiduum = 0;
+			
 
-			if (options->inf_func == FUNC_FPISIN)
+			/* over all rows */
+			#ifdef _OPENMP
+			#pragma omp for collapse(2) reduction(max:maxResiduum)
+			#endif
+			for (i = 0; i < (int) proc_args->working_lines; i++)
 			{
-				int translated_i = i + proc_args->starting_line + 1; //+1 for the 0 line at the beginning
-				fpisin_i = fpisin * sin(pih * (double)(translated_i+1)); //fixed offset
+				/* over all columns */
+				for (j = 0; j < (int) proc_args->working_columns; j++)
+				{
+					/**
+					 * fpisin_i needs to be set in the inner loop, to allow collapsing the 2 for loops.
+					 * outer loop is the same as when the inner loop has running variable j=0
+					*/
+					if(j == 0){
+						fpisin_i = 0.0;
+						if (options->inf_func == FUNC_FPISIN)
+						{
+							int translated_i = i + proc_args->starting_line + 1; //+1 for the 0 line at the beginning
+							fpisin_i = fpisin * sin(pih * (double)(translated_i+1)); //fixed offset
+						}
+					}
+
+					#ifdef _OPENMP
+					#pragma omp single
+					{
+					#endif
+						if(i == 0) {
+							/**
+							 * Kommuniziere die obere Haloline, wobei der erste Prozess hier deadlock brechen soll.
+							*/
+							if(proc_args->rank == 0) 
+							{
+								MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 10, MPI_COMM_WORLD);
+							}
+							else if (proc_args->rank == proc_args->world_size -1)
+							{
+								MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+							}
+							else 
+							{
+								MPI_Recv(haloline_in_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank-1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+								MPI_Ssend(haloline_out_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank+1, 10, MPI_COMM_WORLD);
+							}
+
+							/**
+							 * Kommuniziere die untere Haloline, wobei der letzte Prozess hier deadlock brechen soll.
+							*/
+
+							if(proc_args->rank == 0) 
+							{
+								MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank + 1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+							}
+							else if (proc_args->rank == proc_args->world_size -1)
+							{
+								MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank - 1, 10, MPI_COMM_WORLD);
+							}
+							else 
+							{
+								MPI_Recv(haloline_in_bottom, proc_args->working_columns, MPI_DOUBLE, proc_args->rank + 1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+								MPI_Ssend(haloline_out_top, proc_args->working_columns, MPI_DOUBLE, proc_args->rank - 1, 10, MPI_COMM_WORLD);
+							}
+						}
+					#ifdef _OPENMP
+					}
+					#endif
+
+					/**
+					 * Belege die Werte für a,b,c,d mit den Werten aus der Matrix.
+					 * 0 wenn Randzeilen/-spalten
+					*/
+					double a;
+					if(proc_args->rank != 0) {
+						a = (i == 0) ? haloline_in_top[j] : Matrix_In[i-1][j];
+					}
+					else {
+						a = (i == 0) ? 0 : Matrix_In[i-1][j];
+					}
+
+					double b = (j == 0) ? 0 : Matrix_In[i][j-1];
+					double c = (j == (int) proc_args->working_columns-1) ? 0 : Matrix_In[i][j+1];
+
+					double d;
+					if(proc_args->rank != proc_args->world_size -1) {
+						d = (i == (int) proc_args->working_lines-1) ? haloline_in_bottom[j] : Matrix_In[i+1][j];
+					}
+					else {
+						d = (i == (int) proc_args->working_lines-1) ? 0 : Matrix_In[i+1][j];
+					}
+
+					star = 0.25 * (a + b + c + d);
+
+					if (options->inf_func == FUNC_FPISIN)
+					{
+						star += fpisin_i * sin(pih * (double)(j + 1)); //fixed offset
+					}
+
+					if (options->termination == TERM_PREC || term_iteration == 1)
+					{
+						residuum = Matrix_In[i][j] - star;
+						residuum = (residuum < 0) ? -residuum : residuum;
+						maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+					}
+
+					Matrix_Out[i][j] = star;
+				}
 			}
 
-			/* over all columns */
-			for (j = 0; j < (int) proc_args->working_columns; j++)
+			#ifdef _OPENMP
+			#pragma omp single
 			{
-				/**
-				 * Belege die Werte für a,b,c,d mit den Werten aus der Matrix.
-				 * 0 wenn Randzeilen/-spalten
-				*/
-				double a;
-				if(proc_args->rank != 0) {
-					a = (i == 0) ? haloline_in_top[j] : Matrix_In[i-1][j];
-				}
-				else {
-					a = (i == 0) ? 0 : Matrix_In[i-1][j];
-				}
+			#endif
 
-				double b = (j == 0) ? 0 : Matrix_In[i][j-1];
-				double c = (j == (int) proc_args->working_columns-1) ? 0 : Matrix_In[i][j+1];
+				MPI_Allreduce(&maxResiduum, &global_maxResiduum, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+				
 
-				double d;
-				if(proc_args->rank != proc_args->world_size -1) {
-					d = (i == (int) proc_args->working_lines-1) ? haloline_in_bottom[j] : Matrix_In[i+1][j];
-				}
-				else {
-					d = (i == (int) proc_args->working_lines-1) ? 0 : Matrix_In[i+1][j];
-				}
 
-				star = 0.25 * (a + b + c + d);
+				results->stat_iteration++;
+				results->stat_precision = global_maxResiduum;
 
-				if (options->inf_func == FUNC_FPISIN)
+				/* exchange m1 and m2 */
+				i = m1;
+				m1 = m2;
+				m2 = i;
+
+				/* check for stopping calculation depending on termination method */
+				if (options->termination == TERM_PREC)
 				{
-					star += fpisin_i * sin(pih * (double)(j + 1)); //fixed offset
+					//changed the condition to global_maxResiduum
+					if (global_maxResiduum < options->term_precision)
+					{
+						term_iteration = 0;
+					}
 				}
-
-				if (options->termination == TERM_PREC || term_iteration == 1)
+				else if (options->termination == TERM_ITER)
 				{
-					residuum = Matrix_In[i][j] - star;
-					residuum = (residuum < 0) ? -residuum : residuum;
-					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
+					term_iteration--;
 				}
-
-				Matrix_Out[i][j] = star;
+				
+			#ifdef _OPENMP
 			}
+			#endif
+
 		}
 
-		MPI_Allreduce(&maxResiduum, &global_maxResiduum, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
-		results->stat_iteration++;
-		results->stat_precision = global_maxResiduum;
-
-		/* exchange m1 and m2 */
-		i = m1;
-		m1 = m2;
-		m2 = i;
-
-		/* check for stopping calculation depending on termination method */
-		if (options->termination == TERM_PREC)
-		{
-			//changed the condition to global_maxResiduum
-			if (global_maxResiduum < options->term_precision)
-			{
-				term_iteration = 0;
-			}
-		}
-		else if (options->termination == TERM_ITER)
-		{
-			term_iteration--;
-		}
+	#ifdef _OPENMP
 	}
+	#endif
 
 	results->m = m2;
 
