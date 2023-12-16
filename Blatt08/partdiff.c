@@ -386,7 +386,7 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 	
 	// printf("Rank %d working on lines %d to %d\n", proc_args->rank, proc_args->starting_line, proc_args->starting_line + proc_args->working_lines - 1);
 	#ifdef _OPENMP
-	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j) shared(haloline_in_top, haloline_in_bottom, arguments, options, results, term_iteration, maxResiduum, global_maxResiduum, N, h,  m1, m2, pih, fpisin)
+	#pragma omp parallel num_threads(options->number) default(none) private(star, residuum, i, j) shared(haloline_in_top, haloline_in_bottom, arguments, options, results, term_iteration, maxResiduum, global_maxResiduum, proc_args, h,  m1, m2, pih, fpisin, ompi_mpi_double, ompi_mpi_op_max, ompi_mpi_comm_world)
 	{
 	#endif
 
@@ -434,7 +434,7 @@ calculateMPI (struct calculation_arguments const* arguments, struct calculation_
 					}
 
 					#ifdef _OPENMP
-					#pragma omp single
+					#pragma omp critical
 					{
 					#endif
 						if(i == 0) {
