@@ -7,7 +7,7 @@ LFLAGS = $(CFLAGS)
 LIBS   = -lm
 
 TGTS = partdiff partdiff-par-hybrid
-OBJS = partdiff.o askparams.o partdiff-par-hybrid.o
+OBJS = partdiff.o askparams.o
 
 # Targets ...
 all: $(TGTS)

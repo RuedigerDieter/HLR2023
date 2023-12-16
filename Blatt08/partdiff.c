@@ -27,7 +27,9 @@
 #include <sys/time.h>
 
 #include <mpi.h>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 #include "partdiff.h"
 
