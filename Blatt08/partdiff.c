@@ -807,7 +807,7 @@ main (int argc, char** argv)
 			}
 
 			displayMatrixMPI(&arguments, &results, &options, &proc_args);
-			printf("Rank %d back at main\n", rank);
+			// printf("Rank %d back at main\n", rank);
 			freeMatrices(&arguments);
 
 		}
