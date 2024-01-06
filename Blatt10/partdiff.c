@@ -1,4 +1,4 @@
-/****************************************************************************/
+	/****************************************************************************/
 /****************************************************************************/
 /**                                                                        **/
 /**                 TU München - Institut für Informatik                   **/
@@ -131,6 +131,10 @@ allocateMatrices (struct calculation_arguments* arguments)
 		}
 	}
 }
+
+// TODO: allocateMatricesMPI, Platz für Blöcke allocaten
+// Definitiv diesmal 0er-Zeilen so machen wie bei sequentiell
+
 
 /* ************************************************************************ */
 /* initMatrices: Initialize matrix/matrices and some global variables       */
@@ -275,6 +279,10 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	results->m = m2;
 }
 
+
+// TODO: calculateMPI, MPI-Teil der Berechnung
+// Unterscheidung p0, pn
+
 /* ************************************************************************ */
 /*  displayStatistics: displays some statistics about the calculation       */
 /* ************************************************************************ */
@@ -381,6 +389,8 @@ main (int argc, char** argv)
 	allocateMatrices(&arguments);
 	initMatrices(&arguments, &options);
 
+	// TODO: Unterscheidung GS, Jacobi.
+	// TODO: Unterscheidung Sequential, Parallel.
 	gettimeofday(&start_time, NULL);
 	calculate(&arguments, &results, &options);
 	gettimeofday(&comp_time, NULL);
