@@ -323,6 +323,9 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 
 	int term_iteration = options->term_iteration;
 
+	int rank = proc_args->rank;
+	int world_size = proc_args->world_size;
+
 	// TODO: LocalN
 
 	/* initialize m1 and m2 depending on algorithm */
@@ -345,7 +348,7 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 
 		localMaxResiduum = 0;
 
-		if (arguments->rank < arguments->world_size) { // Idle threads shouldn't do anything
+		if (rank < world_size) { // Idle threads shouldn't do anything
 
 			/* over all rows */
 			for (i = 1; i < arguments->localN - 1; i++)
@@ -548,6 +551,7 @@ main (int argc, char** argv)
 	{
 		// TODO inidividuelles N berechnen
 		// TODO Blockgröße berechnen
+		// TODO Worldsize zum disqualifizieren von threads benutzen
 	}
 
 	initVariables(&arguments, &results, &options);
