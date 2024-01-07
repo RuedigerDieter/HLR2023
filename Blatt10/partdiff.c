@@ -29,6 +29,8 @@
 
 #include "partdiff.h"
 
+#include <mpi.h>
+
 struct calculation_arguments
 {
 	uint64_t  N;              /* number of spaces between lines (lines=N+1)     */
@@ -54,6 +56,15 @@ struct timeval start_time; /* time when program started                      */
 struct timeval comp_time;  /* time when calculation completed                */
 
 
+/**
+ * individuelle Prozessvariablen
+*/
+struct proc_arguments
+{
+	int rank;
+	int world_size;
+	int proc_N;
+};
 /* ************************************************************************ */
 /* initVariables: Initializes some global variables                         */
 /* ************************************************************************ */
@@ -283,6 +294,144 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 // TODO: calculateMPI, MPI-Teil der Berechnung
 // Unterscheidung p0, pn
 
+/**
+ * calculateMPI_GS
+ * Berechnet die Matrix mit dem Gauß-Seidel-Verfahren.
+*/
+static void calculateMPI_GS (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options)
+{
+
+}
+/**
+ * calculateMPI_Jacobi
+ * Berechnet die Matrix mit dem Jacobi-Verfahren.
+ * Inspiriert von Patricks Gruppe.
+*/
+static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct proc_arguments* proc_args)
+{
+	uint64_t i, j;								/* local variables for loops */
+	int m1, m2;									/* used as indices for old and new matrices */
+	double star;								/* four times center value minus 4 neigh.b values */
+	double residuum;							/* residuum of current iteration */
+	double localMaxResiduum, globalMaxResiduum; /* maximum residuum value of a slave in iteration */
+
+	uint64_t const N = arguments->N;
+	double const h = arguments->h;
+
+	double pih = 0.0;
+	double fpisin = 0.0;
+
+	int term_iteration = options->term_iteration;
+
+	// TODO: LocalN
+
+	/* initialize m1 and m2 depending on algorithm */
+	m1 = 0;
+	m2 = 1;
+
+	if (options->inf_func == FUNC_FPISIN)
+	{
+		pih = PI * h;
+		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
+	}
+
+	int above = (proc_args->rank == 0) ? NULL : proc_args->rank - 1;
+	int below = (proc_args->rank == proc_args->world_size - 1) ? NULL : proc_args->rank + 1;
+
+	while (term_iteration > 0)
+	{
+		double **Matrix_Out = arguments->Matrix[m1];
+		double **Matrix_In = arguments->Matrix[m2];
+
+		localMaxResiduum = 0;
+
+		if (arguments->rank < arguments->world_size) { // Idle threads shouldn't do anything
+
+			/* over all rows */
+			for (i = 1; i < arguments->localN - 1; i++)
+			{
+				double fpisin_i = 0.0;
+
+				if (options->inf_func == FUNC_FPISIN)
+				{
+					fpisin_i = fpisin * sin(pih * (double) (i + arguments->from - 1));
+				}
+
+				/* over all columns */
+				for (j = 1; j < N; j++)
+				{
+					star = 0.25 * (Matrix_In[i - 1][j] + Matrix_In[i][j - 1] + Matrix_In[i][j + 1] + Matrix_In[i + 1][j]);
+
+					if (options->inf_func == FUNC_FPISIN)
+					{
+						star += fpisin_i * sin(pih * (double)j);
+					}
+
+					if (options->termination == TERM_PREC || term_iteration == 1)
+					{
+						residuum = Matrix_In[i][j] - star;
+						residuum = (residuum < 0) ? -residuum : residuum;
+						localMaxResiduum = (residuum < localMaxResiduum) ? localMaxResiduum : residuum;
+					}
+
+					Matrix_Out[i][j] = star;
+				}
+			}
+
+
+			if (proc_args->rank % 2)
+			{
+				if (above != NULL)
+				{
+					// TODO: Austausch mit above
+				}
+				if (below != NULL)
+				{
+					// TODO: Austausch mit below
+				}
+			}
+			else
+			{
+				if (below != NULL)
+				{
+					// TODO
+				}
+				if (above != NULL)
+				{
+					// TODO
+				}
+			}
+
+		}
+
+		// Max Reduction over maxResiduum and communicate to all processes
+		MPI_Allreduce(&localMaxResiduum, &globalMaxResiduum, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+		results->stat_iteration++;
+		results->stat_precision = globalMaxResiduum;
+
+		/* exchange m1 and m2 */
+		i = m1;
+		m1 = m2;
+		m2 = i;
+
+		/* check for stopping calculation depending on termination method */
+		if (options->termination == TERM_PREC)
+		{
+			if (globalMaxResiduum < options->term_precision)
+			{
+				term_iteration = 0;
+			}
+		}
+		else if (options->termination == TERM_ITER)
+		{
+			term_iteration--;
+		}
+	}
+
+	results->m = m2;
+}
+
 /* ************************************************************************ */
 /*  displayStatistics: displays some statistics about the calculation       */
 /* ************************************************************************ */
@@ -382,17 +531,46 @@ main (int argc, char** argv)
 	struct calculation_arguments arguments;
 	struct calculation_results results;
 
+	struct proc_arguments proc_args;
+
+	int rank, world_size;
+
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
 	askParams(&options, argc, argv);
+
+	proc_args.rank = rank;
+	proc_args.world_size = world_size;
+	
+	if (!(world_size != 1)
+	{
+		// TODO inidividuelles N berechnen
+		// TODO Blockgröße berechnen
+	}
 
 	initVariables(&arguments, &results, &options);
 
 	allocateMatrices(&arguments);
 	initMatrices(&arguments, &options);
 
-	// TODO: Unterscheidung GS, Jacobi.
-	// TODO: Unterscheidung Sequential, Parallel.
 	gettimeofday(&start_time, NULL);
-	calculate(&arguments, &results, &options);
+	if (world_size == 1) 
+	{
+		calculate(&arguments, &results, &options);
+	} 
+	else 
+	{
+		if (options.method == METH_GAUSS_SEIDEL) 
+		{
+			calculateMPI_GS(&arguments, &results, &options, &proc_args);
+		} 
+		else 
+		{
+			calculateMPI_Jacobi(&arguments, &results, &options, &proc_args);
+		}
+	}
 	gettimeofday(&comp_time, NULL);
 
 	displayStatistics(&arguments, &results, &options);
