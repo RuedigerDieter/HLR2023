@@ -547,7 +547,7 @@ main (int argc, char** argv)
 	proc_args.rank = rank;
 	proc_args.world_size = world_size;
 	
-	if (!(world_size != 1)
+	if (!(world_size == 1)
 	{
 		// TODO inidividuelles N berechnen
 		// TODO Blockgröße berechnen
