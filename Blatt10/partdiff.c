@@ -314,10 +314,14 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	m1 = 0;
 	m2 = m1;
+	
 	int rank = proc_args->rank;
 	int world_size = proc_args->world_size;
 	int above = (proc_args->rank == 0) ? NULL : proc_args->rank - 1;
 	int below = (proc_args->rank == proc_args->world_size - 1) ? NULL : proc_args->rank + 1;
+	int LAST_ITERATION = 0;
+
+	int msg[(N + 1) +1];
 
 	int term_iteration = options->term_iteration;
 
@@ -374,17 +378,32 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		m1 = m2;
 		m2 = i;
 
+		
+
 		/* check for stopping calculation depending on termination method */
+		// TODO Implementiere Flag von n-1
 		if (options->termination == TERM_PREC)
 		{
 			if (maxResiduum < options->term_precision)
 			{
 				term_iteration = 0;
 			}
+			if (LAST_ITERATION)
+			{
+				term_iteration = 0;
+
+			}
+		
 		}
 		else if (options->termination == TERM_ITER)
 		{
 			term_iteration--;
+		}
+		msg = Matrix_Out[start];
+		msg[N + 1] = LAST_ITERATION;
+		if (below != NULL)
+		{
+			MPI_Ssend(msg, N + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
 		}
 	}
 
