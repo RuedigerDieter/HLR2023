@@ -493,7 +493,6 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 			{
 				if (above != NULL)
 				{
-
 					// TODO: Austausch mit above
 				}
 				if (below != NULL)
