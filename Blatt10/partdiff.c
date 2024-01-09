@@ -321,10 +321,15 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	int below = (proc_args->rank == proc_args->world_size - 1) ? NULL : proc_args->rank + 1;
 	int LAST_ITERATION = 0;
 
+	MPI_Request request;
 	int msg[(N + 1) +1];
 
 	int term_iteration = options->term_iteration;
 
+	if (rank >= world_size)
+	{
+		return;
+	}
 
 	if (options->inf_func == FUNC_FPISIN)
 	{
@@ -338,6 +343,15 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		double** Matrix_In  = arguments->Matrix[m2];
 
 		maxResiduum = 0;
+
+		//evtl nach der Berechnung FIXME?
+		
+		/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
+		if (rank == 0)
+		{
+			MPI_Test(&request, &LAST_ITERATION, MPI_STATUS_IGNORE);
+
+		}
 
 		/* over all rows */
 		for (i = 1; i < N; i++)
@@ -370,15 +384,11 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			}
 		}
 
-		results->stat_iteration++;
-		results->stat_precision = maxResiduum;
-
-		/* exchange m1 and m2 */
-		i = m1;
-		m1 = m2;
-		m2 = i;
-
-		
+		if (rank == 0)
+		{
+			results->stat_iteration++;
+			results->stat_precision = maxResiduum;
+		}
 
 		/* check for stopping calculation depending on termination method */
 		// TODO Implementiere Flag von n-1
@@ -386,7 +396,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		{
 			if (maxResiduum < options->term_precision)
 			{
-				term_iteration = 0;
+				int buf_LAST_ITERATION = 1;
+				MPI_Isend(&buf_LAST_ITERATION, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &request);
 			}
 			if (LAST_ITERATION)
 			{
@@ -399,10 +410,13 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		{
 			term_iteration--;
 		}
-		msg = Matrix_Out[start];
+		*msg = Matrix_Out[start];
 		msg[N + 1] = LAST_ITERATION;
+
+		// TODO auf Send warten, bevor überschireben wird.
 		if (below != NULL)
 		{
+			// TODO Austauschen
 			MPI_Ssend(msg, N + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
 		}
 	}
