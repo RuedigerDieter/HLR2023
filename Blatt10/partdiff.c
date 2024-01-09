@@ -391,7 +391,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}
 
 		/* check for stopping calculation depending on termination method */
-		// TODO Implementiere Flag von n-1
+		// TODO MaxRes schicken, 		
 		if (options->termination == TERM_PREC)
 		{
 			if (maxResiduum < options->term_precision)
