@@ -69,7 +69,7 @@ struct proc_arguments
 /* ************************************************************************ */
 /* initVariables: Initializes some global variables                         */
 /* ************************************************************************ */
-/*
+
 static
 void
 initVariables (struct calculation_arguments* arguments, struct calculation_results* results, struct options const* options)
@@ -82,7 +82,7 @@ initVariables (struct calculation_arguments* arguments, struct calculation_resul
 	results->stat_iteration = 0;
 	results->stat_precision = 0;
 }
-*/
+
 static
 void
 initVariablesMPI (struct calculation_arguments* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
@@ -591,13 +591,13 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 
 			/* over all rows */
 			// local row
-			for (i = 1; i < arguments-> - 1; i++)
+			for (i = 1; i < proc_args->lpp - 1; i++)
 			{
 				double fpisin_i = 0.0;
 
 				if (options->inf_func == FUNC_FPISIN)
 				{
-					fpisin_i = fpisin * sin(pih * (double) (i + arguments->from - 1));
+					fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1));
 				}
 
 				/* over all columns */
@@ -633,16 +633,16 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 				}
 				if (below != NULL)
 				{
-					MPI_Ssend(Matrix_Out[proc_args->lpp - 2], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
-					MPI_Recv(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
+					MPI_Recv(Matrix_Out[proc_args->lpp], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
 			}
 			else
 			{
 				if (below != NULL)
 				{
-					MPI_Recv(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					MPI_Ssend(Matrix_Out[proc_args->lpp - 2], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
+					MPI_Recv(Matrix_Out[proc_args->lpp], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
 				}
 				if (above != NULL)
 				{
@@ -676,6 +676,7 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 		{
 			term_iteration--;
 		}
+		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
 	results->m = m2;
@@ -790,17 +791,27 @@ main (int argc, char** argv)
 
 	askParams(&options, argc, argv);
 
-	proc_args.rank = rank;
-	proc_args.world_size = world_size;
-	
-	if (!(world_size == 1))
+
+	if (world_size != 1)
 	{
 		// TODO inidividuelles N berechnen
 		// TODO lpp berechnen
 		// TODO Worldsize zum disqualifizieren von threads benutzen
-		initVariablesMPI(&arguments, &results, &options);
-		allocateMatricesMPI(&arguments);
-		initMatricesMPI(&arguments, &options);
+
+		int lpp = arguments.N / world_size; 
+		int lpp_rest = arguments.N % world_size;
+		if (!lpp)
+		{
+			world_size = lpp_rest;
+			proc_args.world_size = world_size;
+		} 
+		proc_args.world_size = world_size;
+		proc_args.rank = rank;
+		proc_args.lpp = lpp + (rank < lpp_rest ? 1 : 0);
+		
+		initVariablesMPI(&arguments, &results, &options, &proc_args);
+		allocateMatricesMPI(&arguments,&proc_args);
+		initMatricesMPI(&arguments, &options, &proc_args);
 		
 	}
 	else
