@@ -256,6 +256,8 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 	double const h = arguments->h;
 	double*** Matrix = arguments->Matrix;
 
+
+	// TODO Matrix braucht 2 placeholder-zeilen oben und unten?
 	/* initialize matrix/matrices with zeros */
 	for (g = 0; g < arguments->num_matrices; g++)
 	{
