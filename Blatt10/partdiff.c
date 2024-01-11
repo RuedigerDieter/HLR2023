@@ -423,9 +423,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	double pih = 0.0;
 	double fpisin = 0.0;
-
-	m1 = 0;
-	m2 = m1;
 	
 	int rank = proc_args->rank;
 	int world_size = proc_args->world_size;
@@ -454,8 +451,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	while (term_iteration > 0)
 	{
-		double** Matrix_Out = arguments->Matrix[m1];
-		double** Matrix_In  = arguments->Matrix[m2];
+		double** Matrix = arguments->Matrix[0];
 
 		maxResiduum = 0;
 		
@@ -478,7 +474,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			/* over all columns */
 			for (j = 1; j < N; j++)
 			{
-				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
+				star = 0.25 * (Matrix[i-1][j] + Matrix[i][j-1] + Matrix[i][j+1] + Matrix[i+1][j]);
 
 				if (options->inf_func == FUNC_FPISIN)
 				{
@@ -492,7 +488,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
 				}
 
-				Matrix_Out[i][j] = star;
+				Matrix[i][j] = star;
 			}
 		}
 
@@ -521,12 +517,12 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		{
 			term_iteration--;
 		}
-		*msg = Matrix_Out[start];
+		*msg = Matrix[lpp - 1];
 		msg[N + 1] = LAST_ITERATION;
 
 		if (below != NULL)
 		{
-			MPI_Recv(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(Matrix[proc_args->lpp], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			MPI_Isend(msg, N + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &halo_below);
 		}
@@ -535,9 +531,9 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			// evtl FIXME
 			MPI_Recv(msg_buf, N + 1 + 1, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			LAST_ITERATION = msg_buf[N + 1];
-			Matrix_In[0] = msg_buf;
+			Matrix[0] = msg_buf;
 			MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
-			MPI_Isend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, &halo_above);
+			MPI_Isend(Matrix[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, &halo_above);
 		}
 	}
 
