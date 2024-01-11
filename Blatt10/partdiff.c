@@ -535,11 +535,18 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		*msg = Matrix_Out[start];
 		msg[N + 1] = LAST_ITERATION;
 
-		// TODO auf Send warten, bevor überschireben wird.
 		if (below != NULL)
 		{
-			// TODO Austauschen
+			MPI_Recv(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			MPI_Isend(msg, N + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &halo_below);
+		}
+		if (above != NULL)
+		{
+			// evtl FIXME
+			MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
+			MPI_Isend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, &halo_above);
 		}
 	}
 
