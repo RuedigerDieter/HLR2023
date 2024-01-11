@@ -154,7 +154,7 @@ allocateMemory (size_t size)
 /* ************************************************************************ */
 /* allocateMatrices: allocates memory for matrices                          */
 /* ************************************************************************ */
-/*
+
 static
 void
 allocateMatrices (struct calculation_arguments* arguments)
@@ -175,7 +175,7 @@ allocateMatrices (struct calculation_arguments* arguments)
 			arguments->Matrix[i][j] = arguments->M + (i * (N + 1) * (N + 1)) + (j * (N + 1));
 		}
 	}
-}*/
+}
 
 static
 void
@@ -207,7 +207,7 @@ allocateMatricesMPI (struct calculation_arguments* arguments, struct process_arg
 /* ************************************************************************ */
 /* initMatrices: Initialize matrix/matrices and some global variables       */
 /* ************************************************************************ */
-/*
+
 static
 void
 initMatrices (struct calculation_arguments* arguments, struct options const* options)
@@ -244,7 +244,7 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 			}
 		}
 	}
-}*/
+}
 
 static
 void
@@ -783,16 +783,22 @@ main (int argc, char** argv)
 	if (!(world_size == 1))
 	{
 		// TODO inidividuelles N berechnen
-		// TODO Blockgröße berechnen
+		// TODO lpp berechnen
 		// TODO Worldsize zum disqualifizieren von threads benutzen
+		initVariablesMPI(&arguments, &results, &options);
+		allocateMatricesMPI(&arguments);
+		initMatricesMPI(&arguments, &options);
+		
+	}
+	else
+	{
+		initVariables(&arguments, &results, &options);
+		allocateMatrices(&arguments);
+		initMatrices(&arguments, &options);
 	}
 
-	initVariablesMPI(&arguments, &results, &options);
-
-	allocateMatricesMPI(&arguments);
-	initMatricesMPI(&arguments, &options);
-
 	gettimeofday(&start_time, NULL);
+	
 	if (world_size == 1) 
 	{
 		calculate(&arguments, &results, &options);
@@ -811,9 +817,17 @@ main (int argc, char** argv)
 	gettimeofday(&comp_time, NULL);
 
 	displayStatistics(&arguments, &results, &options);
-	displayMatrix(&arguments, &results, &options);
-
+	
+	if (world_size != 1)
+	{
+		DisplayMatrix();
+	}
+	else
+	{
+		displayMatrix(&arguments, &results, &options);
+	}
 	freeMatrices(&arguments);
 
+	MPI_Finalize();
 	return 0;
 }
