@@ -458,8 +458,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		double** Matrix_In  = arguments->Matrix[m2];
 
 		maxResiduum = 0;
-
-		//evtl nach der Berechnung FIXME?
 		
 		/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
 		if (rank == 0)
@@ -467,14 +465,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			MPI_Test(&request, &LAST_ITERATION, MPI_STATUS_IGNORE);
 		}
 		
-
-		/* Muster für Kommunikation mit der "vorherigen" Iteration*/
-		MPI_Recv(msg_buf, N + 1 + 1, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		LAST_ITERATION = msg_buf[N + 1];
-		Matrix_In[0] = msg_buf;
-
-		// haloline zurückschicken
-
 		/* over all rows */
 		for (i = 1; i < N; i++)
 		{
@@ -524,7 +514,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			if (LAST_ITERATION)
 			{
 				term_iteration = 0;
-
 			}
 		
 		}
@@ -544,7 +533,9 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		if (above != NULL)
 		{
 			// evtl FIXME
-			MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(msg_buf, N + 1 + 1, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			LAST_ITERATION = msg_buf[N + 1];
+			Matrix_In[0] = msg_buf;
 			MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
 			MPI_Isend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, &halo_above);
 		}
