@@ -584,7 +584,8 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 		if (rank < world_size) { // Idle threads shouldn't do anything
 
 			/* over all rows */
-			for (i = 1; i < arguments->localN - 1; i++)
+			// local row
+			for (i = 1; i < arguments-> - 1; i++)
 			{
 				double fpisin_i = 0.0;
 
@@ -594,6 +595,7 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 				}
 
 				/* over all columns */
+				// local columns
 				for (j = 1; j < N; j++)
 				{
 					star = 0.25 * (Matrix_In[i - 1][j] + Matrix_In[i][j - 1] + Matrix_In[i][j + 1] + Matrix_In[i + 1][j]);
@@ -619,22 +621,27 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 			{
 				if (above != NULL)
 				{
-					// TODO: Austausch mit above
+					// TODO check column width
+					MPI_Ssend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD);
+					MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
 				if (below != NULL)
 				{
-					// TODO: Austausch mit below
+					MPI_Ssend(Matrix_Out[proc_args->lpp - 2], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
+					MPI_Recv(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
 			}
 			else
 			{
 				if (below != NULL)
 				{
-					// TODO
+					MPI_Recv(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(Matrix_Out[proc_args->lpp - 2], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
 				}
 				if (above != NULL)
 				{
-					// TODO
+					MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Ssend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD);
 				}
 			}
 
