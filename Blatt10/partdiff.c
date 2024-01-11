@@ -63,11 +63,13 @@ struct proc_arguments
 {
 	int rank;
 	int world_size;
-	int proc_N;
+	int lpp;
+	int start_line;
 };
 /* ************************************************************************ */
 /* initVariables: Initializes some global variables                         */
 /* ************************************************************************ */
+/*
 static
 void
 initVariables (struct calculation_arguments* arguments, struct calculation_results* results, struct options const* options)
@@ -80,6 +82,37 @@ initVariables (struct calculation_arguments* arguments, struct calculation_resul
 	results->stat_iteration = 0;
 	results->stat_precision = 0;
 }
+*/
+static
+void
+initVariablesMPI (struct calculation_arguments* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
+{
+	arguments->N = (options->interlines * 8) + 9 - 1;
+	arguments->num_matrices = (options->method == METH_JACOBI) ? 2 : 1;
+	arguments->h = 1.0 / arguments->N;
+
+	results->m = 0;
+	results->stat_iteration = 0;
+	results->stat_precision = 0;
+
+	uint64_t lpp = (arguments->N+1) / proc_args->world_size; // lines per process
+	uint64_t lpp_rest = (arguments->N+1) % proc_args->world_size; // rest lines per process
+
+	uint64_t start_line = 0;
+	for(uint64_t x = 0; x < proc_args->rank; x++) {
+		start_line += lpp + (x < lpp_rest ? 1 : 0);
+	}
+	proc_args->start_line = start_line;
+
+	proc_args->lpp = lpp + (proc_args->rank < lpp_rest ? 1 : 0);
+	proc_args->lpp += 2; // everyone has 2 halolines...
+	if(proc_args->rank == 0 || proc_args->rank == proc_args->world_size - 1)
+	{
+		--proc_args->lpp; // except first and last process
+	}
+
+}
+
 
 /* ************************************************************************ */
 /* freeMatrices: frees memory for matrices                                  */
@@ -121,6 +154,7 @@ allocateMemory (size_t size)
 /* ************************************************************************ */
 /* allocateMatrices: allocates memory for matrices                          */
 /* ************************************************************************ */
+/*
 static
 void
 allocateMatrices (struct calculation_arguments* arguments)
@@ -141,6 +175,29 @@ allocateMatrices (struct calculation_arguments* arguments)
 			arguments->Matrix[i][j] = arguments->M + (i * (N + 1) * (N + 1)) + (j * (N + 1));
 		}
 	}
+}*/
+
+static
+void
+allocateMatricesMPI (struct calculation_arguments* arguments, struct process_arguments* proc_args)
+{
+	uint64_t i, j;
+
+	uint64_t const columnwidth = arguments->N+1;
+
+
+	arguments->M = allocateMemory(arguments->num_matrices * proc_args->lpp * columnwidth * sizeof(double));
+	arguments->Matrix = allocateMemory(arguments->num_matrices * sizeof(double**));
+
+	for (i = 0; i < arguments->num_matrices; i++)
+	{
+		arguments->Matrix[i] = allocateMemory(proc_args->lpp * sizeof(double*));
+
+		for (j = 0; j < proc_args->lpp; j++)
+		{
+			arguments->Matrix[i][j] = arguments->M + (i * proc_args->lpp * columnwidth) + (j * columnwidth);
+		}
+	}
 }
 
 // TODO: allocateMatricesMPI, Platz für Blöcke allocaten
@@ -150,6 +207,7 @@ allocateMatrices (struct calculation_arguments* arguments)
 /* ************************************************************************ */
 /* initMatrices: Initialize matrix/matrices and some global variables       */
 /* ************************************************************************ */
+/*
 static
 void
 initMatrices (struct calculation_arguments* arguments, struct options const* options)
@@ -186,6 +244,60 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 			}
 		}
 	}
+}*/
+
+static
+void
+initMatricesMPI (struct calculation_arguments* arguments, struct options const* options, struct process_arguments* proc_args)
+{
+	uint64_t g, i, j; /* local variables for loops */
+
+	uint64_t const N = arguments->N;
+	double const h = arguments->h;
+	double*** Matrix = arguments->Matrix;
+
+	/* initialize matrix/matrices with zeros */
+	for (g = 0; g < arguments->num_matrices; g++)
+	{
+		for (i = 0; i < proc_args->lpp; i++)
+		{
+			for (j = 0; j <= N; j++)
+			{
+				Matrix[g][i][j] = 0.0;
+			}
+		}
+	}
+
+	/* initialize borders, depending on function (function 2: nothing to do) */
+	if (options->inf_func == FUNC_F0)
+	{
+		for (j = 0; j < arguments->num_matrices; j++)
+		{
+			if(proc_args->rank == 0) //Nur proc0 hat obere Kante
+			{
+				for(i = 0; i < N; i++) {
+					Matrix[j][0][N - i] = 1 + h * i; // Obere Kante
+				}
+			}
+
+			if(proc_args->rank == proc_args->world_size - 1) //Nur procN hat untere Kante
+			{
+				for(i = 0; i < N; i++) {
+					Matrix[j][proc_args->lpp - 1][i] = 1 - (h * i); // Untere Kante
+				}
+			}
+
+			for(i = 0; i < N; i++){ //Jeder hat linke und rechte Kante
+				if(i >= proc_args->start_line && i < proc_args->start_line + proc_args->lpp - 1){ //Wenn i in der Matrix liegt
+					int ii = i - proc_args->start_line; //ii ist i in der Matrix
+					Matrix[j][ii][0] = 1 + (1 - (h * ii)); // Linke Kante mit ii
+					Matrix[j][N - ii][N] = h * ii; // Rechte Kante mit ii
+				}
+			}
+		}
+	}
+
+	
 }
 
 /* ************************************************************************ */
@@ -668,17 +780,17 @@ main (int argc, char** argv)
 	proc_args.rank = rank;
 	proc_args.world_size = world_size;
 	
-	if (!(world_size == 1)
+	if (!(world_size == 1))
 	{
 		// TODO inidividuelles N berechnen
 		// TODO Blockgröße berechnen
 		// TODO Worldsize zum disqualifizieren von threads benutzen
 	}
 
-	initVariables(&arguments, &results, &options);
+	initVariablesMPI(&arguments, &results, &options);
 
-	allocateMatrices(&arguments);
-	initMatrices(&arguments, &options);
+	allocateMatricesMPI(&arguments);
+	initMatricesMPI(&arguments, &options);
 
 	gettimeofday(&start_time, NULL);
 	if (world_size == 1) 
