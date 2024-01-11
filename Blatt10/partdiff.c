@@ -434,7 +434,10 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	int LAST_ITERATION = 0;
 
 	MPI_Request request;
+	MPI_Request halo_above;
+	MPI_Request halo_below;
 	int msg[(N + 1) +1];
+	int msg_buf[(N + 1) +1];
 
 	int term_iteration = options->term_iteration;
 
@@ -462,8 +465,15 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		if (rank == 0)
 		{
 			MPI_Test(&request, &LAST_ITERATION, MPI_STATUS_IGNORE);
-
 		}
+		
+
+		/* Muster für Kommunikation mit der "vorherigen" Iteration*/
+		MPI_Recv(msg_buf, N + 1 + 1, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		LAST_ITERATION = msg_buf[N + 1];
+		Matrix_In[0] = msg_buf;
+
+		// haloline zurückschicken
 
 		/* over all rows */
 		for (i = 1; i < N; i++)
@@ -529,7 +539,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		if (below != NULL)
 		{
 			// TODO Austauschen
-			MPI_Ssend(msg, N + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
+			MPI_Isend(msg, N + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &halo_below);
 		}
 	}
 
