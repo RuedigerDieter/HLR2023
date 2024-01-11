@@ -798,7 +798,7 @@ main (int argc, char** argv)
 	}
 
 	gettimeofday(&start_time, NULL);
-	
+
 	if (world_size == 1) 
 	{
 		calculate(&arguments, &results, &options);
@@ -820,7 +820,8 @@ main (int argc, char** argv)
 	
 	if (world_size != 1)
 	{
-		DisplayMatrix();
+		 // DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
+		DisplayMatrix(&arguments, &results, &options, rank, world_size, proc_args.start_line, proc_args.start_line + proc_args.lpp - 1);
 	}
 	else
 	{
