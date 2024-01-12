@@ -187,10 +187,6 @@ allocateMatricesMPI (struct calculation_arguments* arguments, struct process_arg
 	}
 }
 
-// TODO: allocateMatricesMPI, Platz für Blöcke allocaten
-// Definitiv diesmal 0er-Zeilen so machen wie bei sequentiell
-
-
 /* ************************************************************************ */
 /* initMatrices: Initialize matrix/matrices and some global variables       */
 /* ************************************************************************ */
@@ -243,8 +239,10 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 	double const h = arguments->h;
 	double*** Matrix = arguments->Matrix;
 
-
-	// TODO Matrix braucht 2 placeholder-zeilen oben und unten?
+	if (proc_args->rank >= proc_args->world_size)
+	{
+		return;
+	}
 	/* initialize matrix/matrices with zeros */
 	for (g = 0; g < arguments->num_matrices; g++)
 	{
@@ -285,8 +283,6 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 			}
 		}
 	}
-
-	
 }
 
 /* ************************************************************************ */
@@ -565,9 +561,16 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 	uint64_t above = (rank == 0) ? invalid_rank : rank - 1;
 	uint64_t below = (rank == world_size - 1) ? invalid_rank : rank + 1;
 
+	if (rank >= world_size)
+	{
+		return;
+	}
+
 	/* initialize m1 and m2 depending on algorithm */
 	m1 = 0;
 	m2 = 1;
+
+	printf("[%d] lpp: %d\n", rank, lpp);
 
 	if (options->inf_func == FUNC_FPISIN)
 	{
@@ -575,80 +578,78 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
-	
-
-	while (term_iteration > 0)
+		while (term_iteration > 0)
 	{
 		double **Matrix_Out = arguments->Matrix[m1];
 		double **Matrix_In = arguments->Matrix[m2];
 
 		localMaxResiduum = 0;
 
-		if (rank < world_size) { // Idle threads shouldn't do anything
+		/* over all rows */
+		// local row
+		for (i = 1; i < lpp - 1; i++)
+		{
+			double fpisin_i = 0.0;
 
-			/* over all rows */
-			// local row
-			for (i = 1; i < lpp; i++)
+			if (options->inf_func == FUNC_FPISIN)
 			{
-				double fpisin_i = 0.0;
+				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1));
+			}
 
+			/* over all columns */
+			// local columns
+			for (j = 1; j < N; j++)
+			{
+				star = 0.25 * (Matrix_In[i - 1][j] + Matrix_In[i][j - 1] + Matrix_In[i][j + 1] + Matrix_In[i + 1][j]);
 				if (options->inf_func == FUNC_FPISIN)
 				{
-					fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1));
+					star += fpisin_i * sin(pih * (double)j);
 				}
 
-				/* over all columns */
-				// local columns
-				for (j = 1; j < N; j++)
+				if (options->termination == TERM_PREC || term_iteration == 1)
 				{
-					star = 0.25 * (Matrix_In[i - 1][j] + Matrix_In[i][j - 1] + Matrix_In[i][j + 1] + Matrix_In[i + 1][j]);
-
-					if (options->inf_func == FUNC_FPISIN)
-					{
-						star += fpisin_i * sin(pih * (double)j);
-					}
-
-					if (options->termination == TERM_PREC || term_iteration == 1)
-					{
-						residuum = Matrix_In[i][j] - star;
-						residuum = (residuum < 0) ? -residuum : residuum;
-						localMaxResiduum = (residuum < localMaxResiduum) ? localMaxResiduum : residuum;
-					}
-
-					Matrix_Out[i][j] = star;
+					residuum = Matrix_In[i][j] - star;
+					residuum = (residuum < 0) ? -residuum : residuum;
+					localMaxResiduum = (residuum < localMaxResiduum) ? localMaxResiduum : residuum;
 				}
+
+				Matrix_Out[i][j] = star;
 			}
-
-
-			if (proc_args->rank % 2)
-			{
-				if (above != invalid_rank)
-				{
-					// TODO check column width
-					MPI_Ssend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD);
-					MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-				}
-				if (below != invalid_rank)
-				{
-					MPI_Ssend(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
-					MPI_Recv(Matrix_Out[proc_args->lpp], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-				}
-			}
-			else
-			{
-				if (below != invalid_rank)
-				{
-					MPI_Recv(Matrix_Out[proc_args->lpp], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					MPI_Ssend(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
-				}
-				if (above != invalid_rank)
-				{
-					MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					MPI_Ssend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD);
-				}
-			}
-
 		}
+
+		if (proc_args->rank % 2)
+		{
+			if (above != invalid_rank)
+			{
+				printf("[%d] Tausche Halolines mit oben %d\n", rank, above);
+				// TODO check column width
+				MPI_Ssend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD);
+				MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+			if (below != invalid_rank)
+			{
+				printf("[%d] Tausche Halolines mit unten %d\n", rank, below);
+				MPI_Ssend(Matrix_Out[proc_args->lpp - 2], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
+				MPI_Recv(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+		}
+		else
+		{
+			if (below != invalid_rank)
+			{
+				printf("[%d] Tausche Halolines mit unten %d\n", rank, below);
+				MPI_Recv(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				MPI_Ssend(Matrix_Out[proc_args->lpp - 2], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
+			}
+			if (above != invalid_rank)
+			{
+				printf("[%d] Tausche Halolines mit oben %d\n", rank, above);
+				MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				MPI_Ssend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD);
+			}
+		}
+
+		
 
 		// Max Reduction over maxResiduum and communicate to all processes
 		MPI_Allreduce(&localMaxResiduum, &globalMaxResiduum, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -893,11 +894,14 @@ main (int argc, char** argv)
 		{
 			calculateMPI_Jacobi(&arguments, &results, &options, &proc_args);
 		}
+		printf("Verlasse Berechnung\n");
 	}
 	gettimeofday(&comp_time, NULL);
 
-	displayStatistics(&arguments, &results, &options);
-	
+	if (rank == 0)
+	{
+		displayStatistics(&arguments, &results, &options);
+	}
 	if (world_size != 1)
 	{
 		 // DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
