@@ -73,5 +73,4 @@ struct calculation_results
 /* - askparams.c               */
 /* - displaymatrix.c           */
 /* *************************** */
-void askParams (struct options*, int, char**);
-// void DisplayMatrix (struct calculation_arguments*, struct calculation_results*, struct options*, int, int, int, int);
+void askParams (struct options*, int, char**, int);
