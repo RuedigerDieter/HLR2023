@@ -95,7 +95,7 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	proc_args->lpp = lpp;
 
 	uint64_t start_line = 0;
-	start_line = proc_args->rank * lpp_pure + (rank < lpp_rest ? rank : lpp_rest);
+	start_line = proc_args->rank * lpp_pure + (proc_args->rank < lpp_rest ? proc_args->rank : lpp_rest);
 	proc_args->start_line = start_line;
 }
 
