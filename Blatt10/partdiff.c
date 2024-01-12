@@ -520,7 +520,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		if (above != invalid_rank)
 		{
 			// evtl FIXME
-			MPI_Recv(msg_buf, N + 1 + 1, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(msg_buf, N + 1 + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			LAST_ITERATION = msg_buf[N + 1];
 			Matrix[0] = msg_buf;
 			MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
