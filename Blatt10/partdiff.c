@@ -69,11 +69,13 @@ initVariables (struct calculation_arguments* arguments, struct calculation_resul
 
 static
 void
-initVariablesMPI (struct calculation_arguments* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
-{
+initVariablesMPI (struct calculation_arguments* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args, int rank, int world_size){
 	arguments->N = (options->interlines * 8) + 9 - 1;
 	arguments->num_matrices = (options->method == METH_JACOBI) ? 2 : 1;
 	arguments->h = 1.0 / arguments->N;
+
+	proc_args->rank = rank;
+	proc_args->world_size = world_size;
 
 	results->m = 0;
 	results->stat_iteration = 0;
@@ -87,7 +89,6 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	if (!lpp)
 	{
 		proc_args->world_size = lpp_rest;
-		proc_args->world_size = world_size;
 	}
 
 	lpp = lpp + (proc_args->rank < lpp_rest ? 1 : 0);
@@ -461,7 +462,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
-				fpisin_i = fpisin * sin(pih * (double)i);
+				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1));
 			}
 
 			/* over all columns */
@@ -860,10 +861,11 @@ main (int argc, char** argv)
 
 	struct process_arguments proc_args;	
 
+	printf("[%d] World Size: %d\n",rank, world_size);
 	
 	if (world_size != 1)
 	{
-		initVariablesMPI(&arguments, &results, &options, &proc_args);
+		initVariablesMPI(&arguments, &results, &options, &proc_args, rank, world_size);
 		allocateMatricesMPI(&arguments,&proc_args);
 		initMatricesMPI(&arguments, &options, &proc_args);
 		
@@ -873,10 +875,6 @@ main (int argc, char** argv)
 		initVariables(&arguments, &results, &options);
 		allocateMatrices(&arguments);
 		initMatrices(&arguments, &options);
-		proc_args.rank = 0;
-		proc_args.world_size = 1;
-		proc_args.lpp = arguments.N + 1;
-		proc_args.start_line = 0;
 	}
 
 	gettimeofday(&start_time, NULL);
