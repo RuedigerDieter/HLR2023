@@ -884,10 +884,12 @@ main (int argc, char** argv)
 	{
 		if (options.method == METH_GAUSS_SEIDEL) 
 		{
+			printf("[%d] Berechne MPI_GS\n",rank);
 			calculateMPI_GS(&arguments, &results, &options, &proc_args);
 		} 
 		else 
 		{
+			printf("[%d] Berechne MPI_J\n",rank);
 			calculateMPI_Jacobi(&arguments, &results, &options, &proc_args);
 		}
 		printf("Verlasse Berechnung\n");
