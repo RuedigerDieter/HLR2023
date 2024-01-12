@@ -2,6 +2,7 @@
     "files.associations": {
         "atomic": "c",
         "partdiff.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "stdint.h": "c"
     }
 }

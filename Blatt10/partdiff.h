@@ -45,6 +45,26 @@ struct options
 	double   term_precision; /* terminate if precision reached                 */
 };
 
+/* ************************************************************************ */
+/* Global variables                                                         */
+/* ************************************************************************ */
+
+struct calculation_arguments
+{
+	uint64_t  N;              /* number of spaces between lines (lines=N+1)     */
+	uint64_t  num_matrices;   /* number of matrices                             */
+	double    h;              /* length of a space between two lines            */
+	double    ***Matrix;      /* index matrix used for addressing M             */
+	double    *M;             /* two matrices with real values                  */
+};
+
+struct calculation_results
+{
+	uint64_t  m;
+	uint64_t  stat_iteration; /* number of current iteration                    */
+	double    stat_precision; /* actual precision of all slaves in iteration    */
+};
+
 
 /* *************************** */
 /* Some function declarations. */
@@ -54,4 +74,4 @@ struct options
 /* - displaymatrix.c           */
 /* *************************** */
 void askParams (struct options*, int, char**);
-static void DisplayMatrix (struct calculation_arguments*, struct calculation_results*, struct options*, int, int, int, int);
+// void DisplayMatrix (struct calculation_arguments*, struct calculation_results*, struct options*, int, int, int, int);

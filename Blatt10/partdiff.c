@@ -32,25 +32,7 @@
 #include <mpi.h>
 #include <string.h>
 
-struct calculation_arguments
-{
-	uint64_t  N;              /* number of spaces between lines (lines=N+1)     */
-	uint64_t  num_matrices;   /* number of matrices                             */
-	double    h;              /* length of a space between two lines            */
-	double    ***Matrix;      /* index matrix used for addressing M             */
-	double    *M;             /* two matrices with real values                  */
-};
 
-struct calculation_results
-{
-	uint64_t  m;
-	uint64_t  stat_iteration; /* number of current iteration                    */
-	double    stat_precision; /* actual precision of all slaves in iteration    */
-};
-
-/* ************************************************************************ */
-/* Global variables                                                         */
-/* ************************************************************************ */
 
 /* time measurement variables */
 struct timeval start_time; /* time when program started                      */
@@ -67,6 +49,7 @@ struct process_arguments
 	uint64_t lpp;
 	uint64_t start_line;
 };
+
 /* ************************************************************************ */
 /* initVariables: Initializes some global variables                         */
 /* ************************************************************************ */
@@ -782,6 +765,79 @@ displayMatrix (struct calculation_arguments* arguments, struct calculation_resul
 	fflush (stdout);
 }
 
+/**
+ * aus displaymatrix-mpi.c für bessere Übersichtlichkeit hierher kopiert
+*/
+static void
+DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
+{
+  int const elements = 8 * options->interlines + 9;
+
+  int x, y;
+  double** Matrix = arguments->Matrix[results->m];
+  MPI_Status status;
+
+  /* first line belongs to rank 0 */
+  if (rank == 0)
+    from--;
+
+  /* last line belongs to rank size - 1 */
+  if (rank + 1 == size)
+    to++;
+
+  if (rank == 0)
+    printf("Matrix:\n");
+
+  for (y = 0; y < 9; y++)
+  {
+    int line = y * (options->interlines + 1);
+
+    if (rank == 0)
+    {
+      /* check whether this line belongs to rank 0 */
+      if (line < from || line > to)
+      {
+        /* use the tag to receive the lines in the correct order
+         * the line is stored in Matrix[0], because we do not need it anymore */
+        MPI_Recv(Matrix[0], elements, MPI_DOUBLE, MPI_ANY_SOURCE, 42 + y, MPI_COMM_WORLD, &status);
+      }
+    }
+    else
+    {
+      if (line >= from && line <= to)
+      {
+        /* if the line belongs to this process, send it to rank 0
+         * (line - from + 1) is used to calculate the correct local address */
+        MPI_Send(Matrix[line - from + 1], elements, MPI_DOUBLE, 0, 42 + y, MPI_COMM_WORLD);
+      }
+    }
+
+    if (rank == 0)
+    {
+      for (x = 0; x < 9; x++)
+      {
+        int col = x * (options->interlines + 1);
+
+        if (line >= from && line <= to)
+        {
+          /* this line belongs to rank 0 */
+          printf("%7.4f", Matrix[line][col]);
+        }
+        else
+        {
+          /* this line belongs to another rank and was received above */
+          printf("%7.4f", Matrix[0][col]);
+        }
+      }
+
+      printf("\n");
+    }
+  }
+
+  fflush(stdout);
+}
+
+
 /* ************************************************************************ */
 /*  main                                                                    */
 /* ************************************************************************ */
@@ -814,6 +870,7 @@ main (int argc, char** argv)
 		proc_args.world_size = world_size;
 		proc_args.rank = rank;
 		proc_args.lpp = lpp + (rank < lpp_rest ? 1 : 0);
+		proc_args.start_line = rank * lpp + (rank < lpp_rest ? rank : lpp_rest);
 		
 		initVariablesMPI(&arguments, &results, &options, &proc_args);
 		allocateMatricesMPI(&arguments,&proc_args);
@@ -855,7 +912,10 @@ main (int argc, char** argv)
 	if (world_size != 1)
 	{
 		 // DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
-		DisplayMatrix(&arguments, &results, &options, rank, world_size, proc_args.start_line, proc_args.start_line + proc_args.lpp - 1);
+		int from = proc_args.start_line;
+		int to = proc_args.start_line + proc_args.lpp - 1;
+
+		DisplayMatrix(&arguments, &results, &options, rank, world_size, from, to);
 	}
 	else
 	{

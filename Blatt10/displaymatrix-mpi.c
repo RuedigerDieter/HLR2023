@@ -8,8 +8,8 @@
  * - Each process stores two halo lines in its matrix (except for ranks 0 and 3 that only store one).
  * - For instance: Rank 2 has four lines 0-3 but only calculates 1-2 because 0 and 3 are halo lines for other processes. It is responsible for (global) lines 5-6.
  */
-static
-void
+#include "partdiff.h"
+static void
 DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
 {
   int const elements = 8 * options->interlines + 9;
