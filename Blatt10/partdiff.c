@@ -409,6 +409,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	double fpisin = 0.0;
 	
 	
+	printf("[%d] Setze Variablen", proc_args->rank);
 	uint64_t rank = proc_args->rank;
 	uint64_t world_size = proc_args->world_size;
 	const uint64_t invalid_rank = world_size + 1;
@@ -428,6 +429,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	if (rank >= world_size)
 	{
+		printf("[%d] Ueberfluessig, zurueck zu Main\n",rank);
 		return;
 	}
 
@@ -437,6 +439,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
+	printf("[%d] Entering calculation");
 	while (term_iteration > 0)
 	{
 		double** Matrix = arguments->Matrix[0];
@@ -621,14 +624,11 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 		{
 			if (above != invalid_rank)
 			{
-				printf("[%d] Tausche Halolines mit oben %d\n", rank, above);
-				// TODO check column width
 				MPI_Ssend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD);
 				MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			}
 			if (below != invalid_rank)
 			{
-				printf("[%d] Tausche Halolines mit unten %d\n", rank, below);
 				MPI_Ssend(Matrix_Out[proc_args->lpp - 2], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
 				MPI_Recv(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			}
@@ -637,19 +637,15 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 		{
 			if (below != invalid_rank)
 			{
-				printf("[%d] Tausche Halolines mit unten %d\n", rank, below);
 				MPI_Recv(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				MPI_Ssend(Matrix_Out[proc_args->lpp - 2], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
 			}
 			if (above != invalid_rank)
 			{
-				printf("[%d] Tausche Halolines mit oben %d\n", rank, above);
 				MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				MPI_Ssend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD);
 			}
 		}
-
-		
 
 		// Max Reduction over maxResiduum and communicate to all processes
 		MPI_Allreduce(&localMaxResiduum, &globalMaxResiduum, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
