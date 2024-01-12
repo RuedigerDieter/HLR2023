@@ -59,12 +59,12 @@ struct timeval comp_time;  /* time when calculation completed                */
 /**
  * individuelle Prozessvariablen
 */
-struct proc_arguments
+struct process_arguments
 {
-	int rank;
-	int world_size;
-	int lpp;
-	int start_line;
+	uint64_t rank;
+	uint64_t world_size;
+	uint64_t lpp;
+	uint64_t start_line;
 };
 /* ************************************************************************ */
 /* initVariables: Initializes some global variables                         */
@@ -412,13 +412,13 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
  * calculateMPI_GS
  * Berechnet die Matrix mit dem Gauß-Seidel-Verfahren.
 */
-static void calculateMPI_GS (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct proc_arguments* proc_args)
+static void calculateMPI_GS (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
 {
 	int i, j;           /* local variables for loops */
 	int m1, m2;         /* used as indices for old and new matrices */
 	double star;        /* four times center value minus 4 neigh.b values */
 	double residuum;    /* residuum of current iteration */
-	double maxResiduum; /* maximum residuum value of a slave in iteration */
+	double maxResiduum, localMaxResiduum; /* maximum residuum value of a slave in iteration */
 
 	int const N = arguments->N;
 	double const h = arguments->h;
@@ -426,17 +426,18 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	double pih = 0.0;
 	double fpisin = 0.0;
 	
-	int rank = proc_args->rank;
-	int world_size = proc_args->world_size;
-	int above = (proc_args->rank == 0) ? NULL : proc_args->rank - 1;
-	int below = (proc_args->rank == proc_args->world_size - 1) ? NULL : proc_args->rank + 1;
-	int LAST_ITERATION = 0;
+	uint64_t rank = proc_args->rank;
+	uint64_t world_size = proc_args->world_size;
+	uint64_t above = (proc_args->rank == 0) ? -1 : proc_args->rank - 1;
+	uint64_t below = (proc_args->rank == proc_args->world_size - 1) ? -1 : proc_args->rank + 1;
+	double LAST_ITERATION = 0;
+	int lpp = proc_args->lpp;
 
 	MPI_Request request;
 	MPI_Request halo_above;
 	MPI_Request halo_below;
-	int msg[(N + 1) +1];
-	int msg_buf[(N + 1) +1];
+	double msg[(N + 1) +1];
+	double msg_buf[(N + 1) +1];
 
 	int term_iteration = options->term_iteration;
 
@@ -464,7 +465,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}
 		
 		/* over all rows */
-		for (i = 1; i < N; i++)
+		for (i = 1; i < lpp; i++)
 		{
 			double fpisin_i = 0.0;
 
@@ -484,11 +485,11 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 				}
 
 				if (options->termination == TERM_PREC || term_iteration == 1)
-				{
-					residuum = Matrix_In[i][j] - star;
-					residuum = (residuum < 0) ? -residuum : residuum;
-					maxResiduum = (residuum < maxResiduum) ? maxResiduum : residuum;
-				}
+					{
+						residuum = Matrix[i][j] - star;
+						residuum = (residuum < 0) ? -residuum : residuum;
+						localMaxResiduum = (residuum < localMaxResiduum) ? localMaxResiduum : residuum;
+					}
 
 				Matrix[i][j] = star;
 			}
@@ -522,13 +523,13 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		*msg = Matrix[lpp - 1];
 		msg[N + 1] = LAST_ITERATION;
 
-		if (below != NULL)
+		if (below != -1)
 		{
-			MPI_Recv(Matrix[proc_args->lpp], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(Matrix[lpp], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			MPI_Isend(msg, N + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &halo_below);
 		}
-		if (above != NULL)
+		if (above != -1)
 		{
 			// evtl FIXME
 			MPI_Recv(msg_buf, N + 1 + 1, MPI_DOUBLE, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -546,7 +547,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
  * Berechnet die Matrix mit dem Jacobi-Verfahren.
  * Inspiriert von Patricks Gruppe.
 */
-static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct proc_arguments* proc_args)
+static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
 {
 	uint64_t i, j;								/* local variables for loops */
 	int m1, m2;									/* used as indices for old and new matrices */
@@ -564,8 +565,7 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 
 	int rank = proc_args->rank;
 	int world_size = proc_args->world_size;
-
-	// TODO: LocalN
+	int lpp = proc_args->lpp;
 
 	/* initialize m1 and m2 depending on algorithm */
 	m1 = 0;
@@ -577,8 +577,8 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
-	int above = (proc_args->rank == 0) ? NULL : proc_args->rank - 1;
-	int below = (proc_args->rank == proc_args->world_size - 1) ? NULL : proc_args->rank + 1;
+	int above = (rank == 0) ? -1 : rank - 1;
+	int below = (rank == world_size - 1) ? -1 : rank + 1;
 
 	while (term_iteration > 0)
 	{
@@ -591,7 +591,7 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 
 			/* over all rows */
 			// local row
-			for (i = 1; i < proc_args->lpp - 1; i++)
+			for (i = 1; i < proc_args->lpp; i++)
 			{
 				double fpisin_i = 0.0;
 
@@ -625,13 +625,13 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 
 			if (proc_args->rank % 2)
 			{
-				if (above != NULL)
+				if (above != -1)
 				{
 					// TODO check column width
 					MPI_Ssend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD);
 					MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
-				if (below != NULL)
+				if (below != -1)
 				{
 					MPI_Ssend(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
 					MPI_Recv(Matrix_Out[proc_args->lpp], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -639,12 +639,12 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 			}
 			else
 			{
-				if (below != NULL)
+				if (below != -1)
 				{
 					MPI_Recv(Matrix_Out[proc_args->lpp], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 					MPI_Ssend(Matrix_Out[proc_args->lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD);
 				}
-				if (above != NULL)
+				if (above != -1)
 				{
 					MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 					MPI_Ssend(Matrix_Out[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD);
@@ -781,7 +781,7 @@ main (int argc, char** argv)
 	struct calculation_arguments arguments;
 	struct calculation_results results;
 
-	struct proc_arguments proc_args;
+	struct process_arguments proc_args;
 
 	int rank, world_size;
 
