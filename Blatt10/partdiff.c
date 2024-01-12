@@ -452,7 +452,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}
 		
 		/* over all rows */
-		for (i = 1; i < lpp; i++)
+		for (i = 1; i < lpp - 1; i++)
 		{
 			double fpisin_i = 0.0;
 
@@ -508,12 +508,12 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			term_iteration--;
 		}
 
-		memcpy(msg, Matrix[lpp - 1], (N + 1) * sizeof(double));
+		memcpy(msg, Matrix[lpp - 2], (N + 1) * sizeof(double));
 		msg[N + 1] = LAST_ITERATION;
 
 		if (below != invalid_rank)
 		{
-			MPI_Recv(Matrix[lpp], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			MPI_Isend(msg, N + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &halo_below);
 		}
@@ -906,7 +906,7 @@ main (int argc, char** argv)
 	{
 		 // DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
 		int from = proc_args.start_line;
-		int to = proc_args.start_line + proc_args.lpp - 1;
+		int to = proc_args.start_line + proc_args.lpp - 2;
 
 		DisplayMatrix(&arguments, &results, &options, rank, world_size, from, to);
 	}
