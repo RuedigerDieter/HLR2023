@@ -45,6 +45,7 @@ struct options
 	double   term_precision; /* terminate if precision reached                 */
 };
 
+
 /* *************************** */
 /* Some function declarations. */
 /* *************************** */
@@ -53,3 +54,4 @@ struct options
 /* - displaymatrix.c           */
 /* *************************** */
 void askParams (struct options*, int, char**);
+static void DisplayMatrix (struct calculation_arguments*, struct calculation_results*, struct options*, int, int, int, int);

@@ -13,25 +13,24 @@ OBJS = partdiff.o askparams.o displaymatrix-mpi.o
 all: $(TGTS)
 
 partdiff: $(OBJS) Makefile
-	$(CC) $(LFLAGS) -o $@ $(OBJS) $(LIBS)
+    $(CC) $(LFLAGS) -o $@ $(OBJS) $(LIBS)
 
-partdiff-par-hybrid: partdiff-par-hybrid.o askparams.o Makefile
-	$(CC) $(LFLAGS) -fopenmp -o $@ partdiff-par-hybrid.o askparams.o -lm
+partdiff-par-hybrid: partdiff-par-hybrid.o askparams.o displaymatrix-mpi.o Makefile
+    $(CC) $(LFLAGS) -fopenmp -o $@ partdiff-par-hybrid.o askparams.o displaymatrix-mpi.o -lm
 
 partdiff.o: partdiff.c Makefile
 
 partdiff-par-hybrid.o: Makefile
-	$(CC) -c $(CFLAGS) -fopenmp -o partdiff-par-hybrid.o partdiff.c
+    $(CC) -c $(CFLAGS) -fopenmp -o partdiff-par-hybrid.o partdiff.c
 
 askparams.o: askparams.c Makefile
 
 displaymatrix-mpi.o: displaymatrix-mpi.c Makefile
-    $(CC) -c $(CFLAGS) $*.c
 
 # Rule to create *.o from *.c
 %.o: %.c
-	$(CC) -c $(CFLAGS) $*.c
+    $(CC) -c $(CFLAGS) $*.c
 
 clean:
-	$(RM) $(OBJS)
-	$(RM) $(TGTS)
+    $(RM) $(OBJS)
+    $(RM) $(TGTS)
