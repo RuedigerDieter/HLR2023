@@ -415,15 +415,22 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	const uint64_t invalid_rank = world_size + 1;
 	uint64_t above = (proc_args->rank == 0) ? invalid_rank : proc_args->rank - 1;
 	uint64_t below = (proc_args->rank == proc_args->world_size - 1) ? invalid_rank : proc_args->rank + 1;
-	double LAST_ITERATION = 0;
 	int lpp = proc_args->lpp;
 
 
 	MPI_Request request;
 	MPI_Request halo_above;
+	int sent_above_once = 0;
 	MPI_Request halo_below;
-	double msg[(N + 1) +1];
-	double msg_buf[(N + 1) +1];
+	int sent_below_once = 0;
+	double msg[(N + 1) +2];
+	double msg_buf[(N + 1) +2];
+
+	//Diese Variable hat jeder Prozess
+	double LAST_ITERATION = 0; 
+	//Wird von pN benutzt, um zu signalisieren, dass die Präzision erreicht wurde
+	//Wird von p0 benutzt, empfaengt von pN, ob Präzision erreicht wurde
+	int N_to_0_PREC_REACHED = 0;
 
 	int term_iteration = options->term_iteration;
 
@@ -439,24 +446,68 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
+	if(term_iteration > 0 && rank == 0 && options->termination == TERM_PREC){
+		//Beginne im Hintergrund das Empfangen der Nachricht von pN
+		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
+	}
+
+	if(term_iteration > 0 && rank == 0 && options->termination == TERM_PREC){
+		//Beginne im Hintergrund das Empfangen der Nachricht von pN
+		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
+	}
+
 	printf("[%d] Entering calculation", rank);
 	while (term_iteration > 0)
 	{
 		double** Matrix = arguments->Matrix[0];
 
-		maxResiduum = 0;
-		
-		/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
-		if (!rank && options->termination == TERM_PREC) // FIXME: Segfault
+		if (above != invalid_rank)
 		{
-			int buf;
-			MPI_Test(&request, &buf, MPI_STATUS_IGNORE);
-			LAST_ITERATION = buf;
+			MPI_Recv(msg_buf, N + 1 + 1 + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			LAST_ITERATION = msg_buf[N + 1];
+			maxResiduum = msg_buf[N + 2];
+			Matrix[0] = msg_buf;
+			if(sent_above_once){
+				MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
+			}
+			MPI_Isend(Matrix[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, &halo_above);
+			if(!sent_above_once){
+				sent_above_once = 1;
+			}
+		}
+
+
+		if(rank == 0){
+			maxResiduum = 0;
+		}else{ 
+			localResiduum = maxResiduum; //Muss ja von oben empfangen worden sein.
+		}
+		printf("[%d] Iteration: %d\n", rank, term_iteration);
+		
+		
+		/*
+		Nur bei Praezisionsabbruch wird geprueft, ob Prozess 0 die Nachricht von Prozess N erhaelt,
+		dass alles vorbei ist
+		*/
+		if(options->termination == TERM_PREC){
+			/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
+			if (rank == 0)
+			{
+				int buf;
+				//Wir brauchen hier gar keinen Test, da wir ja nur eine Nachricht erwarten
+				//MPI_Test(&request, &N_to_0_PREC_REACHED, MPI_STATUS_IGNORE);
+				LAST_ITERATION = (double) N_to_0_PREC_REACHED;
+			}
 		}
 		
 		/* over all rows */
 		for (i = 1; i < lpp - 1; i++)
 		{
+			/*Vor der Berechnung von Zeile N-1 (lpp-2), muss Zeile N (lpp-1) empfangen werden vom Prozess darunter*/
+			if(i == lpp -2 && below != invalid_rank){
+				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+
 			double fpisin_i = 0.0;
 
 			if (options->inf_func == FUNC_FPISIN)
@@ -485,20 +536,39 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			}
 		}
 
-		if (rank == 0)
+		if (below != invalid_rank)
+		{
+			//Nach der Berechnung von Zeile N-1, baue Nachricht die abgeschickt werden muss.
+			memcpy(msg, Matrix[lpp - 2], (N + 1) * sizeof(double));
+			msg[N + 1] = LAST_ITERATION;
+			msg[N + 2] = maxResiduum;
+
+			if(sent_below_once){
+				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
+			}
+			MPI_Isend(msg, N + 1 + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &halo_below);
+			if(!sent_below_once){
+				sent_below_once = 1;
+			}
+		}
+
+		// Setze eigenes maxResiduum auf localMaxResiduum
+		maxResiduum = localMaxResiduum;
+
+		if (rank == world_size - 1)
 		{
 			results->stat_iteration++;
 			results->stat_precision = maxResiduum;
 		}
 
-		/* check for stopping calculation depending on termination method */
-		// TODO MaxRes schicken, 		
+		/* check for stopping calculation depending on termination method */		
 		if (options->termination == TERM_PREC)
 		{
-			if (maxResiduum < options->term_precision)
+			//Nur der letzte Prozess haelt das globale maxRes, deswegen schickt er die Abbruchsnachricht an Prozess 0
+			if (maxResiduum < options->term_precision && rank = world_size - 1)
 			{
-				int buf_LAST_ITERATION = 1;
-				MPI_Isend(&buf_LAST_ITERATION, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &request);
+				N_to_0_PREC_REACHED = 1;
+				MPI_Isend(&N_to_0_PREC_REACHED, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
 			}
 			if (LAST_ITERATION)
 			{
@@ -509,25 +579,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		else if (options->termination == TERM_ITER)
 		{
 			term_iteration--;
-		}
-
-		memcpy(msg, Matrix[lpp - 2], (N + 1) * sizeof(double));
-		msg[N + 1] = LAST_ITERATION;
-
-		if (below != invalid_rank)
-		{
-			MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
-			MPI_Isend(msg, N + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &halo_below);
-		}
-		if (above != invalid_rank)
-		{
-			// evtl FIXME
-			MPI_Recv(msg_buf, N + 1 + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			LAST_ITERATION = msg_buf[N + 1];
-			Matrix[0] = msg_buf;
-			MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
-			MPI_Isend(Matrix[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, &halo_above);
 		}
 	}
 
