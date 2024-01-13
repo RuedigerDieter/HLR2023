@@ -409,9 +409,9 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	double fpisin = 0.0;
 	
 	
-	printf("[%d] Setze Variablen", proc_args->rank);
 	uint64_t rank = proc_args->rank;
 	uint64_t world_size = proc_args->world_size;
+	printf("[%d] Setze Variablen", rank);
 	const uint64_t invalid_rank = world_size + 1;
 	uint64_t above = (proc_args->rank == 0) ? invalid_rank : proc_args->rank - 1;
 	uint64_t below = (proc_args->rank == proc_args->world_size - 1) ? invalid_rank : proc_args->rank + 1;
@@ -439,7 +439,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 
-	printf("[%d] Entering calculation");
+	printf("[%d] Entering calculation", rank);
 	while (term_iteration > 0)
 	{
 		double** Matrix = arguments->Matrix[0];
@@ -447,7 +447,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		maxResiduum = 0;
 		
 		/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
-		if (rank == 0)
+		if (!rank && options->termination == TERM_PREC) // FIXME: Segfault
 		{
 			int buf;
 			MPI_Test(&request, &buf, MPI_STATUS_IGNORE);
@@ -572,8 +572,6 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 	/* initialize m1 and m2 depending on algorithm */
 	m1 = 0;
 	m2 = 1;
-
-	printf("[%d] lpp: %d\n", rank, lpp);
 
 	if (options->inf_func == FUNC_FPISIN)
 	{
@@ -857,8 +855,6 @@ main (int argc, char** argv)
 	askParams(&options, argc, argv, rank);
 
 	struct process_arguments proc_args;	
-
-	printf("[%d] World Size: %d\n",rank, world_size);
 	
 	if (world_size != 1)
 	{
