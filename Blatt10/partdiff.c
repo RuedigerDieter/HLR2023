@@ -411,7 +411,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	
 	uint64_t rank = proc_args->rank;
 	uint64_t world_size = proc_args->world_size;
-	printf("[%d] Setze Variablen", rank);
 	const uint64_t invalid_rank = world_size + 1;
 	uint64_t above = (proc_args->rank == 0) ? invalid_rank : proc_args->rank - 1;
 	uint64_t below = (proc_args->rank == proc_args->world_size - 1) ? invalid_rank : proc_args->rank + 1;
@@ -456,14 +455,15 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
 	}
 
-	printf("[%d] Entering calculation", rank);
 	while (term_iteration > 0)
 	{
+		printf("[%d] Iteration: %d\n", rank, term_iteration);
 		double** Matrix = arguments->Matrix[0];
 
 		if (above != invalid_rank)
 		{
 			MPI_Recv(msg_buf, N + 1 + 1 + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			printf("[%d] Received Haloline from %d\n", rank,above);
 			LAST_ITERATION = msg_buf[N + 1];
 			maxResiduum = msg_buf[N + 2];
 			Matrix[0] = msg_buf;
@@ -474,13 +474,14 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			if(!sent_above_once){
 				sent_above_once = 1;
 			}
+			printf("[%d] Sent Haloline to %d\n", rank,above);
 		}
 
 
 		if(rank == 0){
 			maxResiduum = 0;
 		}else{ 
-			localResiduum = maxResiduum; //Muss ja von oben empfangen worden sein.
+			localMaxResiduum = maxResiduum; //Muss ja von oben empfangen worden sein.
 		}
 		printf("[%d] Iteration: %d\n", rank, term_iteration);
 		
@@ -518,6 +519,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			/* over all columns */
 			for (j = 1; j < N; j++)
 			{
+				printf("[%d] Element: %d,%d\n", rank,i,j);
 				star = 0.25 * (Matrix[i-1][j] + Matrix[i][j-1] + Matrix[i][j+1] + Matrix[i+1][j]);
 
 				if (options->inf_func == FUNC_FPISIN)
@@ -534,11 +536,14 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 				Matrix[i][j] = star;
 			}
+			printf("[%d] finished row %d\n",rank,i);
 		}
+		printf("[%d] above = %d, below = %d\n",rank,above,below);
 
 		if (below != invalid_rank)
 		{
 			//Nach der Berechnung von Zeile N-1, baue Nachricht die abgeschickt werden muss.
+			printf("[%d] Constructing message\n", rank);
 			memcpy(msg, Matrix[lpp - 2], (N + 1) * sizeof(double));
 			msg[N + 1] = LAST_ITERATION;
 			msg[N + 2] = maxResiduum;
@@ -550,6 +555,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			if(!sent_below_once){
 				sent_below_once = 1;
 			}
+			printf("[%d] Sent Haloline to %d\n", rank,below);
 		}
 
 		// Setze eigenes maxResiduum auf localMaxResiduum
@@ -565,7 +571,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		if (options->termination == TERM_PREC)
 		{
 			//Nur der letzte Prozess haelt das globale maxRes, deswegen schickt er die Abbruchsnachricht an Prozess 0
-			if (maxResiduum < options->term_precision && rank = world_size - 1)
+			if (maxResiduum < options->term_precision && rank == world_size - 1)
 			{
 				N_to_0_PREC_REACHED = 1;
 				MPI_Isend(&N_to_0_PREC_REACHED, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
