@@ -31,6 +31,7 @@
 
 #include <mpi.h>
 #include <string.h>
+#include <limits.h>
 
 
 
@@ -400,14 +401,14 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	int i, j;           /* local variables for loops */
 	double star;        /* four times center value minus 4 neigh.b values */
 	double residuum;    /* residuum of current iteration */
-	double maxResiduum, localMaxResiduum; /* maximum residuum value of a slave in iteration */
 
 	int const N = arguments->N;
 	double const h = arguments->h;
 
 	double pih = 0.0;
 	double fpisin = 0.0;
-	
+	double maxResiduum = 0.0;
+	double localMaxResiduum = 0.0;
 	
 	uint64_t rank = proc_args->rank;
 	uint64_t world_size = proc_args->world_size;
@@ -420,6 +421,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	MPI_Request request;
 	MPI_Request halo_above;
 	int sent_above_once = 0;
+	int first_iteration = 1;
 	MPI_Request halo_below;
 	int sent_below_once = 0;
 	double msg[(N + 1) +2];
@@ -462,6 +464,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 		if (above != invalid_rank)
 		{
+			printf("[%d] Waiting on Haloline from %d\n",rank,above);
 			MPI_Recv(msg_buf, N + 1 + 1 + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			printf("[%d] Received Haloline from %d\n", rank,above);
 			LAST_ITERATION = msg_buf[N + 1];
@@ -505,8 +508,10 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		for (i = 1; i < lpp - 1; i++)
 		{
 			/*Vor der Berechnung von Zeile N-1 (lpp-2), muss Zeile N (lpp-1) empfangen werden vom Prozess darunter*/
-			if(i == lpp -2 && below != invalid_rank){
+			if(i == lpp -2 && below != invalid_rank && !first_iteration){
+				printf("[%d] Receiving Haloline from %d\n", rank,below);
 				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				first_iteration = 0;
 			}
 
 			double fpisin_i = 0.0;
