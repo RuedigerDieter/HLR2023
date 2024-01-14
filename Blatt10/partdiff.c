@@ -388,10 +388,6 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	results->m = m2;
 }
 
-
-// TODO: calculateMPI, MPI-Teil der Berechnung
-// Unterscheidung p0, pn
-
 /**
  * calculateMPI_GS
  * Berechnet die Matrix mit dem Gauß-Seidel-Verfahren.
@@ -554,7 +550,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 		if (rank == world_size - 1)
 		{
-			printf("[%d] maxResiduum: %f\n", rank, maxResiduum);
 			results->stat_iteration++;
 			results->stat_precision = maxResiduum;
 		}
@@ -775,6 +770,7 @@ displayStatistics (struct calculation_arguments const* arguments, struct calcula
 	printf("Anzahl Iterationen: %" PRIu64 "\n", results->stat_iteration);
 	printf("Norm des Fehlers:   %e\n", results->stat_precision);
 	printf("\n");
+	fflush(stdout);
 }
 
 /****************************************************************************/
@@ -825,12 +821,12 @@ DisplayMatrix (struct calculation_arguments* arguments, struct calculation_resul
   MPI_Status status;
 
   /* first line belongs to rank 0 */
-  if (rank == 0)
-    from--;
+   if (rank == 0)
+     from--;
 
   /* last line belongs to rank size - 1 */
-  if (rank + 1 == size)
-    to++;
+   if (rank + 1 == size)
+     to++;
 
   if (rank == 0)
     printf("Matrix:\n");
@@ -855,7 +851,7 @@ DisplayMatrix (struct calculation_arguments* arguments, struct calculation_resul
       {
         /* if the line belongs to this process, send it to rank 0
          * (line - from + 1) is used to calculate the correct local address */
-        MPI_Send(Matrix[line - from + 1], elements, MPI_DOUBLE, 0, 42 + y, MPI_COMM_WORLD);
+        MPI_Ssend(Matrix[line - from + 1], elements, MPI_DOUBLE, 0, 42 + y, MPI_COMM_WORLD);
       }
     }
 
@@ -938,7 +934,7 @@ main (int argc, char** argv)
 	}
 	gettimeofday(&comp_time, NULL);
 
-	if (rank == world_size - 1)
+	if (!rank)
 	{
 		displayStatistics(&arguments, &results, &options);
 	}
@@ -946,7 +942,7 @@ main (int argc, char** argv)
 	{
 		 // DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
 		int from = proc_args.start_line;
-		int to = proc_args.start_line + proc_args.lpp - 2;
+		int to = proc_args.start_line + proc_args.lpp - 3;
 
 		DisplayMatrix(&arguments, &results, &options, rank, world_size, from, to);
 	}
