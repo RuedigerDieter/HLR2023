@@ -273,6 +273,7 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 	/* initialize borders, depending on function (function 2: nothing to do) */
 	if (options->inf_func == FUNC_F0)
 	{
+		
 		for (j = 0; j < arguments->num_matrices; j++)
 		{
 			
@@ -293,17 +294,17 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 			}
 
 			/* Initialisiere seitliche Kanten.*/
-			for (i = 1; i < lpp - 1; i++)
+			for (i = 0; i < lpp - 1; i++)
 			{
-				int global_pos = start_line + i - 1;
+				int global_pos = (rank > 0) ? start_line + i - 1: start_line + i;
 				Matrix[j][i][0] = 1 + (1 - (h * global_pos)); // Linke Kante
 			}
 
 			for (i = lpp - 2; i >= 0; i--)
-			{
-				int global_pos = start_line + i - 1;
-				Matrix[j][i][N] = h * global_pos; // Rechte Kante
-			}
+			 {
+				int global_pos = (rank > 0) ? start_line + i - 1: start_line + i;
+			 	Matrix[j][i][N] = h * global_pos; // Rechte Kante
+			 }
 			printf("[%d] Finished right border\n", (int) rank);
 
 			// Matrix[j][i][0] = 1 + (1 - (h * i)); // Linke Kante
