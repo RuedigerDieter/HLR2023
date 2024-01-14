@@ -540,6 +540,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}
 		if (below != invalid_rank)
 		{
+			// FIXME: Deadlock nach erster Iteration, alle warten auf 0
 			//Nach der Berechnung von Zeile N-1, baue Nachricht die abgeschickt werden muss.
 			memcpy(msg, Matrix[lpp - 2], (N + 1) * sizeof(double));
 			msg[N + 1] = LAST_ITERATION;
