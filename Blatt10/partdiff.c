@@ -90,11 +90,17 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	results->stat_precision = 0;
 
 	uint64_t lpp = (arguments->N+1) / proc_args->world_size; // lines per process
+
+	if (!lpp)
+	{
+		world_size = arguments->N+1;
+		lpp = 1;
+	}
+
 	uint64_t lpp_pure = lpp;
 	uint64_t lpp_rest = (arguments->N+1) % proc_args->world_size; // rest lines per process
 
 	/* Wenn zu viele Prozesse, setze die Worldsize auf die nötige Anzahl runter	*/
-	d
 
 	lpp = lpp + (proc_args->rank < lpp_rest ? 1 : 0);
 	lpp += 2; // Platz für Halolines oben und unten
