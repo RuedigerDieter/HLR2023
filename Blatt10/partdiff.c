@@ -68,6 +68,13 @@ initVariables (struct calculation_arguments* arguments, struct calculation_resul
 	results->stat_precision = 0;
 }
 
+static void zeroProcArgs(struct process_arguments* proc_args){
+	proc_args->rank = 0;
+	proc_args->world_size = 0;
+	proc_args->lpp = 0;
+	proc_args->start_line = 0;
+}
+
 static
 void
 initVariablesMPI (struct calculation_arguments* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args, int rank, int world_size){
@@ -912,6 +919,8 @@ main (int argc, char** argv)
 	askParams(&options, argc, argv, rank);
 
 	struct process_arguments proc_args;	
+	
+	zeroProcArgs(&proc_args);
 	
 	if (world_size != 1)
 	{
