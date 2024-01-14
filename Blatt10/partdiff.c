@@ -275,10 +275,11 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 	{
 		for (j = 0; j < arguments->num_matrices; j++)
 		{
+			
 			/* Initialisiere Untere Kante */
 			if(!rank)
 			{
-				for(i = 0; i < N; i++) {
+				for(i = 0; i <= N; i++) {
 					Matrix[j][0][N - i] = 1 + h * i;
 				}
 			}
@@ -286,22 +287,25 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 			/* Initialisiere untere Kante */
 			if(rank == world_size - 1) 
 			{
-				for(i = 0; i < N; i++) {
+				for(i = 0; i <= N; i++) {
 					Matrix[j][proc_args->lpp - 2][i] = 1 - (h * i);
 				}
 			}
 
 			/* Initialisiere seitliche Kanten.*/
-			for(i = 0; i < N + 1; i++)
+			for (i = 1; i < lpp - 1; i++)
 			{
-				int myLine = (i >= start_line && i < start_line + lpp - 1); 
-				if(myLine)
-				{
-					int ii = i - start_line; 
-					Matrix[j][ii][0] = 1 + (1 - (h * i));
-					Matrix[j][lpp - 1 ii][N] = h * i;
-				}
+				int global_pos = start_line + i - 1;
+				Matrix[j][i][0] = 1 + (1 - (h * global_pos)); // Linke Kante
 			}
+
+			for (i = lpp - 2; i >= 0; i--)
+			{
+				int global_pos = start_line + i - 1;
+				Matrix[j][i][N] = h * global_pos; // Rechte Kante
+			}
+			printf("[%d] Finished right border\n", (int) rank);
+
 			// Matrix[j][i][0] = 1 + (1 - (h * i)); // Linke Kante
 			// 	Matrix[j][N][i] = 1 - (h * i); // Untere Kante
 			// 	Matrix[j][N - i][N] = h * i; // Rechte Kante
@@ -471,7 +475,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	if(rank == 0 && options->termination == TERM_PREC){
 		//Beginne im Hintergrund das Empfangen der Nachricht von pN
 		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
-		printf("[%d] Empfange PREC_REACHED von %d, %d\n", (int) rank, (int) world_size - 1, (int) term_iteration);
+		// printf("[%d] Empfange PREC_REACHED von %d, %d\n", (int) rank, (int) world_size - 1, (int) term_iteration);
 	}
 
 	while (term_iteration > 0)
@@ -481,7 +485,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		//Erst senden der unbearbeiteten Topline
 		if (above != invalid_rank)
 		{
-			printf("[%d] Senden an %d, %d\n", (int) rank, (int) above, (int) term_iteration);
+			// printf("[%d] Senden an %d, %d\n", (int) rank, (int) above, (int) term_iteration);
 			if(sent_above_once)
 			{
 				MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
@@ -489,7 +493,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			MPI_Isend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD, &halo_above);
 			sent_above_once = 1;
 
-			printf("[%d] Empfange von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
+			// printf("[%d] Empfange von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
 			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			LAST_ITERATION = msg_buf_from_above[N + 1];
 			maxResiduum = msg_buf_from_above[N + 2];
@@ -565,12 +569,11 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 			if(sent_below_once)
 			{
-				printf("[%d] Warte auf %d, %d\n", (int) rank, (int) below, (int) term_iteration);
+				// printf("[%d] Warte auf %d, %d\n", (int) rank, (int) below, (int) term_iteration);
 				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
 			MPI_Isend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);		
 			sent_below_once = 1;
-			printf("[%d] Gesendet an %d, %d\n", (int) rank, (int) below, (int) term_iteration);
 		}
 
 		// Setze eigenes maxResiduum auf localMaxResiduum
@@ -590,7 +593,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			{
 				N_to_0_PREC_REACHED = 1;
 				MPI_Isend(&N_to_0_PREC_REACHED, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
-				printf("[%d] Sende PREC_REACHED an %d, %d\n", (int) rank, (int) 0, (int) term_iteration);
+				// printf("[%d] Sende PREC_REACHED an %d, %d\n", (int) rank, (int) 0, (int) term_iteration);
 			}
 			if (LAST_ITERATION)
 			{
