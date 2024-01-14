@@ -458,10 +458,12 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	while (term_iteration > 0)
 	{
+		printf("[%d] Iteration %d\n", (int) rank, (int) term_iteration);
 		double** Matrix = arguments->Matrix[0];
 
 		if (above != invalid_rank)
 		{
+			printf("[%d] Empfange von %d\n", (int) rank, (int) above);
 			MPI_Recv(msg_buf, N + 1 + 1 + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			LAST_ITERATION = msg_buf[N + 1];
 			maxResiduum = msg_buf[N + 2];
@@ -473,6 +475,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			if(!sent_above_once){
 				sent_above_once = 1;
 			}
+			printf("[%d] Empfangen von %d\n", (int) rank, (int) above);
 		}
 
 
