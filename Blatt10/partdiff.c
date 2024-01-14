@@ -548,6 +548,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 			if(sent_below_once)
 			{
+				printf("[%d] Warte auf %d, %d\n", (int) rank, (int) below, (int) term_iteration);
 				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
 			MPI_Isend(msg, N + 1 + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &halo_below);
