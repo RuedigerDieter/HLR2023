@@ -94,10 +94,7 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	uint64_t lpp_rest = (arguments->N+1) % proc_args->world_size; // rest lines per process
 
 	/* Wenn zu viele Prozesse, setze die Worldsize auf die nötige Anzahl runter	*/
-	if (!lpp)
-	{
-		proc_args->world_size = lpp_rest;
-	}
+	d
 
 	lpp = lpp + (proc_args->rank < lpp_rest ? 1 : 0);
 	lpp += 2; // Platz für Halolines oben und unten
@@ -424,11 +421,10 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	MPI_Request request;
 	MPI_Request halo_above;
 	int sent_above_once = 0;
-	int first_iteration = 1;
 	MPI_Request halo_below;
 	int sent_below_once = 0;
-	double msg[(N + 1) +2];
-	double msg_buf[(N + 1) +2];
+	double msg_buf_to_below[(N + 1) +2];
+	double msg_buf_from_above[(N + 1) +2];
 
 	//Diese Variable hat jeder Prozess
 	double LAST_ITERATION = 0; 
@@ -463,10 +459,10 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		if (above != invalid_rank)
 		{
 			printf("[%d] Empfange von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
-			MPI_Recv(msg_buf, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			LAST_ITERATION = msg_buf[N + 1];
-			maxResiduum = msg_buf[N + 2];
-			Matrix[0] = msg_buf;
+			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			LAST_ITERATION = msg_buf_from_above[N + 1];
+			maxResiduum = msg_buf_from_above[N + 2];
+			Matrix[0] = msg_buf_from_above;
 			if(sent_above_once){
 				MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
 			}
@@ -505,9 +501,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 				continue;
 			
 			/*Vor der Berechnung von Zeile N-1 (lpp-2), muss Zeile N (lpp-1) empfangen werden vom Prozess darunter*/
-			if(i == lpp - 2 && below != invalid_rank && !first_iteration){
+			if(i == lpp - 2 && below != invalid_rank){
 				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-				first_iteration = 0;
 			}
 
 			double fpisin_i = 0.0;
@@ -542,16 +537,16 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		{
 			// FIXME: Deadlock nach erster Iteration, alle warten auf 0
 			//Nach der Berechnung von Zeile N-1, baue Nachricht die abgeschickt werden muss.
-			memcpy(msg, Matrix[lpp - 2], (N + 1) * sizeof(double));
-			msg[N + 1] = LAST_ITERATION;
-			msg[N + 2] = maxResiduum;
+			memcpy(msg_buf_to_below, Matrix[lpp - 2], (N + 1) * sizeof(double));
+			msg_buf_to_below[N + 1] = LAST_ITERATION;
+			msg_buf_to_below[N + 2] = maxResiduum;
 
 			if(sent_below_once)
 			{
 				printf("[%d] Warte auf %d, %d\n", (int) rank, (int) below, (int) term_iteration);
 				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
-			MPI_Isend(msg, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
+			MPI_Isend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
 			if(!sent_below_once)
 			{
 				sent_below_once = 1;
@@ -588,6 +583,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			term_iteration--;
 		}
 	}
+
+	//post display work
 
 	if (rank == world_size - 1)
 	{
