@@ -494,7 +494,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		for (i = 1; i < lpp - 1; i++)
 		{
 			/*Vor der Berechnung von Zeile N-1 (lpp-2), muss Zeile N (lpp-1) empfangen werden vom Prozess darunter*/
-			if(i == lpp -2 && below != invalid_rank && !first_iteration){
+			if(i == lpp - 2 && below != invalid_rank && !first_iteration){
 				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				first_iteration = 0;
 			}
@@ -575,6 +575,16 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}
 	}
 
+	if (rank == world_size - 1)
+	{
+		MPI_Ssend(&results->stat_iteration, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+		MPI_Ssend(&results->stat_precision, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+	}
+	else if (!rank)
+	{
+		MPI_Recv(&results->stat_iteration, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		MPI_Recv(&results->stat_precision, 1, MPI_DOUBLE, world_size - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	}
 	results->m = 0;
 }
 /**
