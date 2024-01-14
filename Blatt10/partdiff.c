@@ -250,10 +250,15 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 	double const h = arguments->h;
 	double*** Matrix = arguments->Matrix;
 
+	uint64_t world_size = proc_args->world_size;
+	uint64_t rank = proc_args->rank;
+	uint64_t lpp = proc_args->lpp;
+	uint64_t start_line = proc_args->start_line; 
+
+
 	if (proc_args->rank >= proc_args->world_size)
-	{
 		return;
-	}
+
 	/* initialize matrix/matrices with zeros */
 	for (g = 0; g < arguments->num_matrices; g++)
 	{
@@ -265,33 +270,43 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 			}
 		}
 	}
-
 	/* initialize borders, depending on function (function 2: nothing to do) */
 	if (options->inf_func == FUNC_F0)
 	{
 		for (j = 0; j < arguments->num_matrices; j++)
 		{
-			if(proc_args->rank == 0) //Nur proc0 hat obere Kante
+			/* Initialisiere Untere Kante */
+			if(!rank)
 			{
 				for(i = 0; i < N; i++) {
-					Matrix[j][0][N - i] = 1 + h * i; // Obere Kante
+					Matrix[j][0][N - i] = 1 + h * i;
 				}
 			}
 
-			if(proc_args->rank == proc_args->world_size - 1) //Nur procN hat untere Kante
+			/* Initialisiere untere Kante */
+			if(rank == world_size - 1) 
 			{
 				for(i = 0; i < N; i++) {
-					Matrix[j][proc_args->lpp - 1][i] = 1 - (h * i); // Untere Kante
+					Matrix[j][proc_args->lpp - 2][i] = 1 - (h * i);
 				}
 			}
 
-			for(i = 0; i < N; i++){ //Jeder hat linke und rechte Kante
-				if(i >= proc_args->start_line && i < proc_args->start_line + proc_args->lpp - 1){ //Wenn i in der Matrix liegt
-					int ii = i - proc_args->start_line; //ii ist i in der Matrix
-					Matrix[j][ii][0] = 1 + (1 - (h * ii)); // Linke Kante mit ii
-					Matrix[j][N - ii][N] = h * ii; // Rechte Kante mit ii
+			/* Initialisiere seitliche Kanten.*/
+			for(i = 0; i < N + 1; i++)
+			{
+				int myLine = (i >= start_line && i < start_line + lpp - 1); 
+				if(myLine)
+				{
+					int ii = i - start_line; 
+					Matrix[j][ii][0] = 1 + (1 - (h * i));
+					Matrix[j][lpp - 1 ii][N] = h * i;
 				}
 			}
+			// Matrix[j][i][0] = 1 + (1 - (h * i)); // Linke Kante
+			// 	Matrix[j][N][i] = 1 - (h * i); // Untere Kante
+			// 	Matrix[j][N - i][N] = h * i; // Rechte Kante
+			// 	Matrix[j][0][N - i] = 1 + h * i; // Obere Kante
+
 		}
 	}
 }
@@ -467,17 +482,13 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		if (above != invalid_rank)
 		{
 			printf("[%d] Senden an %d, %d\n", (int) rank, (int) above, (int) term_iteration);
-			if(sent_above_once){
+			if(sent_above_once)
+			{
 				MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
 			}
 			MPI_Isend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD, &halo_above);
-			if(!sent_above_once){
-				sent_above_once = 1;
-			}
-		}
+			sent_above_once = 1;
 
-		//Dann empfangen der bearbeiteten Bottomline von Prozess davor
-		if(above != invalid_rank){
 			printf("[%d] Empfange von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
 			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			LAST_ITERATION = msg_buf_from_above[N + 1];
@@ -485,8 +496,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			Matrix[0] = msg_buf_from_above;
 		}
 
-
-		if(rank == 0){
+		if(!rank){
 			maxResiduum = 0;
 		}else{
 			localMaxResiduum = maxResiduum;
@@ -558,11 +568,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 				printf("[%d] Warte auf %d, %d\n", (int) rank, (int) below, (int) term_iteration);
 				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
-			MPI_Isend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
-			if(!sent_below_once)
-			{
-				sent_below_once = 1;
-			}
+			MPI_Isend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);		
+			sent_below_once = 1;
 			printf("[%d] Gesendet an %d, %d\n", (int) rank, (int) below, (int) term_iteration);
 		}
 
