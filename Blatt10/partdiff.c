@@ -449,7 +449,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	if(rank == 0 && options->termination == TERM_PREC){
 		//Beginne im Hintergrund das Empfangen der Nachricht von pN
-		MPI_Irecv(&N_to_0_PREC_REACHED, 0, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
+		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
+		printf("[%d] Empfange PREC_REACHED von %d, %d\n", (int) rank, (int) world_size - 1, (int) term_iteration);
 	}
 
 	while (term_iteration > 0)
@@ -571,6 +572,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			{
 				N_to_0_PREC_REACHED = 1;
 				MPI_Isend(&N_to_0_PREC_REACHED, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
+				printf("[%d] Sende PREC_REACHED an %d, %d\n", (int) rank, (int) 0, (int) term_iteration);
 			}
 			if (LAST_ITERATION)
 			{
