@@ -453,7 +453,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	if(rank == 0 && options->termination == TERM_PREC){
 		//Beginne im Hintergrund das Empfangen der Nachricht von pN
-		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
+		MPI_Irecv(&N_to_0_PREC_REACHED, 0, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
 	}
 
 	while (term_iteration > 0)
@@ -463,14 +463,14 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		if (above != invalid_rank)
 		{
 			printf("[%d] Empfange von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
-			MPI_Recv(msg_buf, N + 1 + 1 + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(msg_buf, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			LAST_ITERATION = msg_buf[N + 1];
 			maxResiduum = msg_buf[N + 2];
 			Matrix[0] = msg_buf;
 			if(sent_above_once){
 				MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
 			}
-			MPI_Isend(Matrix[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, &halo_above);
+			MPI_Isend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD, &halo_above);
 			if(!sent_above_once){
 				sent_above_once = 1;
 			}
@@ -501,12 +501,12 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		/* over all rows */
 		for (i = 1; i < lpp - 1; i++)
 		{
-			if ( rank == world_size - 1 && i == lpp - 2)
+			if (rank == world_size - 1 && i == lpp - 2)
 				continue;
 			
 			/*Vor der Berechnung von Zeile N-1 (lpp-2), muss Zeile N (lpp-1) empfangen werden vom Prozess darunter*/
 			if(i == lpp - 2 && below != invalid_rank && !first_iteration){
-				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				first_iteration = 0;
 			}
 
@@ -551,7 +551,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 				printf("[%d] Warte auf %d, %d\n", (int) rank, (int) below, (int) term_iteration);
 				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
-			MPI_Isend(msg, N + 1 + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &halo_below);
+			MPI_Isend(msg, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
 			if(!sent_below_once)
 			{
 				sent_below_once = 1;
@@ -591,13 +591,13 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	if (rank == world_size - 1)
 	{
-		MPI_Ssend(&results->stat_iteration, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-		MPI_Ssend(&results->stat_precision, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+		MPI_Ssend(&results->stat_iteration, 1, MPI_INT, 0, 3, MPI_COMM_WORLD);
+		MPI_Ssend(&results->stat_precision, 1, MPI_DOUBLE, 0, 4, MPI_COMM_WORLD);
 	}
 	else if (!rank)
 	{
-		MPI_Recv(&results->stat_iteration, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		MPI_Recv(&results->stat_precision, 1, MPI_DOUBLE, world_size - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		MPI_Recv(&results->stat_iteration, 1, MPI_INT, world_size - 1, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		MPI_Recv(&results->stat_precision, 1, MPI_DOUBLE, world_size - 1, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	}
 	results->m = 0;
 }
