@@ -475,10 +475,10 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 		if(rank == 0){
 			maxResiduum = 0;
-		}else{ 
-			localMaxResiduum = maxResiduum; //Muss ja von oben empfangen worden sein.
+		}else{
+			localMaxResiduum = maxResiduum;
 		}		
-		
+
 		/*
 		Nur bei Praezisionsabbruch wird geprueft, ob Prozess 0 die Nachricht von Prozess N erhaelt,
 		dass alles vorbei ist
@@ -514,12 +514,13 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			for (j = 1; j < N; j++)
 			{
 				star = 0.25 * (Matrix[i-1][j] + Matrix[i][j-1] + Matrix[i][j+1] + Matrix[i+1][j]);
+				
 
 				if (options->inf_func == FUNC_FPISIN)
 				{
 					star += fpisin_i * sin(pih * (double)j);
 				}
-
+				
 				if (options->termination == TERM_PREC || term_iteration == 1)
 					{
 						residuum = Matrix[i][j] - star;
@@ -530,7 +531,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 				Matrix[i][j] = star;
 			}
 		}
-
 		if (below != invalid_rank)
 		{
 			//Nach der Berechnung von Zeile N-1, baue Nachricht die abgeschickt werden muss.
@@ -538,11 +538,13 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			msg[N + 1] = LAST_ITERATION;
 			msg[N + 2] = maxResiduum;
 
-			if(sent_below_once){
+			if(sent_below_once)
+			{
 				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
 			MPI_Isend(msg, N + 1 + 1 + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &halo_below);
-			if(!sent_below_once){
+			if(!sent_below_once)
+			{
 				sent_below_once = 1;
 			}
 		}
@@ -552,6 +554,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 		if (rank == world_size - 1)
 		{
+			printf("[%d] maxResiduum: %f\n", rank, maxResiduum);
 			results->stat_iteration++;
 			results->stat_precision = maxResiduum;
 		}
@@ -935,7 +938,7 @@ main (int argc, char** argv)
 	}
 	gettimeofday(&comp_time, NULL);
 
-	if (rank == 0)
+	if (rank == world_size - 1)
 	{
 		displayStatistics(&arguments, &results, &options);
 	}
