@@ -433,7 +433,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	if (rank >= world_size)
 	{
-		printf("[%d] Ueberfluessig, zurueck zu Main\n",rank);
+		printf("[%d] Ueberfluessig, zurueck zu Main\n", (int) rank);
 		return;
 	}
 
@@ -483,7 +483,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
 			if (rank == 0)
 			{
-				int buf;
 				//Wir brauchen hier gar keinen Test, da wir ja nur eine Nachricht erwarten
 				//MPI_Test(&request, &N_to_0_PREC_REACHED, MPI_STATUS_IGNORE);
 				LAST_ITERATION = (double) N_to_0_PREC_REACHED;
