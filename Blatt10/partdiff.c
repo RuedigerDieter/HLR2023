@@ -89,17 +89,19 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	results->stat_iteration = 0;
 	results->stat_precision = 0;
 
+	uint64_t usable_lines = arguments->N+1-2;
+
 	//FIXME Halolines werden bei den Randrängen evtl doppelt belegt -> Mismatch zwischen Echter und Virtueller Position
-	uint64_t lpp = (arguments->N+1-2) / proc_args->world_size; // lines per process
+	uint64_t lpp = (usable_lines) / proc_args->world_size; // lines per process
 
 	if (!lpp)
 	{
-		world_size = arguments->N+1;
+		world_size = usable_lines;
 		lpp = 1;
 	}
 
 	uint64_t lpp_pure = lpp;
-	uint64_t lpp_rest = (arguments->N+1) % proc_args->world_size; // rest lines per process
+	uint64_t lpp_rest = (usable_lines) % proc_args->world_size; // rest lines per process
 
 	/* Wenn zu viele Prozesse, setze die Worldsize auf die nötige Anzahl runter	*/
 
@@ -109,7 +111,12 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	proc_args->lpp = lpp;
 
 	uint64_t start_line = 0;
-	start_line = proc_args->rank * lpp_pure + (proc_args->rank < lpp_rest ? proc_args->rank : lpp_rest);
+
+	//+1 offset for the first line
+	start_line = proc_args->rank * lpp_pure + (proc_args->rank <= lpp_rest ? proc_args->rank : lpp_rest) + 1 ;
+
+	start_line += (proc_args->rank > 0) ? 1 : 0; // Platz für Haloline oben
+
 	proc_args->start_line = start_line;
 	printf("[%d] Handling ll %d-%d (lpp: %d)\n", (int) rank, (int) start_line, start_line + lpp - 3,lpp);
 }
@@ -299,7 +306,7 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 			/* Initialisiere seitliche Kanten.*/
 			for (i = 0; i < lpp - 1; i++)
 			{
-				int global_pos = (rank > 0) ? start_line + i - 1: start_line + i;
+				int global_pos = (rank > 0) ? start_line + i - 1: i;
 				Matrix[j][i][0] = 1 + (1 - (h * global_pos)); // Linke Kante
 			}
 
