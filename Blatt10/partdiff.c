@@ -487,7 +487,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		//Erst senden der unbearbeiteten Topline
 		if (above != invalid_rank)
 		{
-			// printf("[%d] Senden an %d, %d\n", (int) rank, (int) above, (int) term_iteration);
 			if(sent_above_once)
 			{
 				MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
@@ -495,8 +494,9 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			MPI_Isend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD, &halo_above);
 			sent_above_once = 1;
 
-			// printf("[%d] Empfange von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
+			printf("[%d] Empfange von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
 			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			printf("[%d] Empfangen von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
 			LAST_ITERATION = msg_buf_from_above[N + 1];
 			maxResiduum = msg_buf_from_above[N + 2];
 			Matrix[0] = msg_buf_from_above;
@@ -564,10 +564,12 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 			if(sent_below_once)
 			{
-				// printf("[%d] Warte auf %d, %d\n", (int) rank, (int) below, (int) term_iteration);
+				printf("[%d] Warte auf Empfang von %d, %d\n", (int) rank, (int) below, (int) term_iteration);
 				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
-			MPI_Isend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);		
+
+			MPI_Isend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
+			printf("[%d] Gesendet an %d, %d\n", (int) rank, (int) below, (int) term_iteration);		
 			sent_below_once = 1;
 		}
 
