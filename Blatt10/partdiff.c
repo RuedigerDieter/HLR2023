@@ -609,8 +609,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}
 	}
 
-	//post display work
-
+	/* Rang 0 übernimmt alle Display-Aufgaben */
 	if (rank == world_size - 1)
 	{
 		MPI_Ssend(&results->stat_iteration, 1, MPI_INT, 0, 3, MPI_COMM_WORLD);
