@@ -519,11 +519,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}
 		
 		/* over all rows */
-		for (i = 1; i < lpp - 1; i++)
-		{
-			if (rank == world_size - 1 && i == lpp - 2)
-				continue;
-			
+		for (i = 1; i < lpp - 2; i++)
+		{	
 			/*Vor der Berechnung von Zeile N-1 (lpp-2), muss Zeile N (lpp-1) empfangen werden vom Prozess darunter*/
 			if(i == lpp - 2 && below != invalid_rank){
 				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
