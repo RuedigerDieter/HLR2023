@@ -530,7 +530,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
-				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1));
+				// fixme ? removed -1
+				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line));
 			}
 
 			/* over all columns */
@@ -678,7 +679,7 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
-				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1));
+				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line));
 			}
 
 			/* over all columns */
