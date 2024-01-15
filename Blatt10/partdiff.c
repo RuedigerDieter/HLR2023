@@ -90,7 +90,7 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	results->stat_precision = 0;
 
 	//FIXME Halolines werden bei den Randrängen evtl doppelt belegt -> Mismatch zwischen Echter und Virtueller Position
-	uint64_t lpp = (arguments->N+1) / proc_args->world_size; // lines per process
+	uint64_t lpp = (arguments->N+1-2) / proc_args->world_size; // lines per process
 
 	if (!lpp)
 	{
