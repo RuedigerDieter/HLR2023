@@ -105,8 +105,6 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 
 	lpp = lpp + (proc_args->rank < lpp_rest ? 1 : 0);
 	lpp += 2; // Platz für Halolines oben und unten
-	if(proc_args->rank == 0 || proc_args->rank == proc_args->world_size - 1)
-		lpp -= 1; // Platz für Halolines oben und unten
 	
 	proc_args->lpp = lpp;
 
