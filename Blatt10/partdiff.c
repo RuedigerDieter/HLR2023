@@ -495,7 +495,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			{
 				MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
 			}
-			MPI_Isend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD, &halo_above);
+			MPI_Issend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD, &halo_above);
 			sent_above_once = 1;
 
 			//printf("[%d] Empfange von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
@@ -572,7 +572,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
 
-			MPI_Isend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
+			MPI_Issend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
 			//printf("[%d] Gesendet an %d, %d\n", (int) rank, (int) below, (int) term_iteration);		
 			sent_below_once = 1;
 		}
@@ -593,7 +593,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			if (maxResiduum < options->term_precision && rank == world_size - 1)
 			{
 				N_to_0_PREC_REACHED = 1;
-				MPI_Isend(&N_to_0_PREC_REACHED, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
+				MPI_Issend(&N_to_0_PREC_REACHED, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
 				// printf("[%d] Sende PREC_REACHED an %d, %d\n", (int) rank, (int) 0, (int) term_iteration);
 			}
 			if (LAST_ITERATION)
