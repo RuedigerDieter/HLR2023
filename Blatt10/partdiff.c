@@ -509,17 +509,13 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}		
 
 		/*
-		Nur bei Praezisionsabbruch wird geprueft, ob Prozess 0 die Nachricht von Prozess N erhaelt,
-		dass alles vorbei ist
+			Nur bei Praezisionsabbruch wird geprueft, ob Prozess 0 die Nachricht von Prozess N erhaelt,
+			dass alles vorbei ist
 		*/
 		if(options->termination == TERM_PREC){
 			/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
 			if (rank == 0)
-			{
-				//Wir brauchen hier gar keinen Test, da wir ja nur eine Nachricht erwarten
-				//MPI_Test(&request, &N_to_0_PREC_REACHED, MPI_STATUS_IGNORE);
 				LAST_ITERATION = (double) N_to_0_PREC_REACHED;
-			}
 		}
 		
 		/* over all rows */
