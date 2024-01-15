@@ -4,5 +4,5 @@
 #SBATCH -o output.out
 #SBATCH -p west
 #SBATCH --export=ALL
-mpirun ./run > para.txt
+./run.sh > para.txt
 
