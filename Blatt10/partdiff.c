@@ -309,12 +309,6 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 			 	Matrix[j][i][N] = h * global_pos; // Rechte Kante
 			 }
 			printf("[%d] Finished right border\n", (int) rank);
-
-			// Matrix[j][i][0] = 1 + (1 - (h * i)); // Linke Kante
-			// 	Matrix[j][N][i] = 1 - (h * i); // Untere Kante
-			// 	Matrix[j][N - i][N] = h * i; // Rechte Kante
-			// 	Matrix[j][0][N - i] = 1 + h * i; // Obere Kante
-
 		}
 	}
 }
