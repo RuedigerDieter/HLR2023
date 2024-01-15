@@ -89,6 +89,7 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	results->stat_iteration = 0;
 	results->stat_precision = 0;
 
+	//FIXME Halolines werden bei den Randrängen evtl doppelt belegt -> Mismatch zwischen Echter und Virtueller Position
 	uint64_t lpp = (arguments->N+1) / proc_args->world_size; // lines per process
 
 	if (!lpp)
@@ -558,7 +559,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}
 		if (below != invalid_rank)
 		{
-			// FIXME: Deadlock nach erster Iteration, alle warten auf 0
 			//Nach der Berechnung von Zeile N-1, baue Nachricht die abgeschickt werden muss.
 			memcpy(msg_buf_to_below, Matrix[lpp - 2], (N + 1) * sizeof(double));
 			msg_buf_to_below[N + 1] = LAST_ITERATION;
@@ -950,7 +950,6 @@ main (int argc, char** argv)
 		initVariablesMPI(&arguments, &results, &options, &proc_args, rank, world_size);
 		allocateMatricesMPI(&arguments,&proc_args);
 		initMatricesMPI(&arguments, &options, &proc_args);
-		
 	}
 	else
 	{
