@@ -116,6 +116,8 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 
 		uint64_t start_line = rank * lpp_pure + (rank < lpp_rest ? rank : lpp_rest);
 		start_line += 1; // Platz für Haloline oben
+		if (!rank)
+			start_line--;
 		
 		proc_args->start_line = start_line;
 	}
