@@ -331,7 +331,7 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 
 			for (i = lpp - 2; i > 0; i--)
 			 {
-				int global_pos = (rank > 0) ? start_line + i - 1: start_line + i;
+				int global_pos = start_line + i - 1;
 				global_pos = N - global_pos;
 			 	Matrix[j][i][N] = h * global_pos; // Rechte Kante
 			 }
