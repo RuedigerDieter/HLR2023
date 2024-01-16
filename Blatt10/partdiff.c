@@ -100,28 +100,36 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	if (!lpp)
 	{
 		world_size = usable_lines;
-		lpp = 1;
+		proc_args->lpp = 3;
+		proc_args->start_line = rank+1;
+
+	}else{
+		uint64_t lpp_pure = lpp;
+		uint64_t lpp_rest = (usable_lines) % proc_args->world_size; // rest lines per process
+
+		/* Wenn zu viele Prozesse, setze die Worldsize auf die nötige Anzahl runter	*/
+
+		lpp = lpp + (proc_args->rank < lpp_rest ? 1 : 0);
+		lpp += 2; // Platz für Halolines oben und unten
+		
+		proc_args->lpp = lpp;
+
+		uint64_t start_line = 0;
+
+		//+1 offset for the first line
+		for(int i = 0; i < proc_args->rank; i++)
+		{
+			int lpp_for_i = lpp_pure + (i < lpp_rest ? 1 : 0);
+			int lpp_for_i_with_halo = lpp_for_i + 2;
+			start_line += lpp_for_i_with_halo - 1;
+		}
+		++start_line;
+		
+		proc_args->start_line = start_line;
 	}
 
-	uint64_t lpp_pure = lpp;
-	uint64_t lpp_rest = (usable_lines) % proc_args->world_size; // rest lines per process
-
-	/* Wenn zu viele Prozesse, setze die Worldsize auf die nötige Anzahl runter	*/
-
-	lpp = lpp + (proc_args->rank < lpp_rest ? 1 : 0);
-	lpp += 2; // Platz für Halolines oben und unten
 	
-	proc_args->lpp = lpp;
-
-	uint64_t start_line = 0;
-
-	//+1 offset for the first line
-	start_line = proc_args->rank * lpp_pure + (proc_args->rank <= lpp_rest ? proc_args->rank : lpp_rest) + 1 ;
-
-	start_line += (proc_args->rank > 0) ? 1 : 0; // Platz für Haloline oben
-
-	proc_args->start_line = start_line;
-	printf("[%d] Handling ll %d-%d (lpp: %d)\n", (int) rank, (int) start_line, start_line + lpp - 3,lpp);
+	printf("[%d] Handling ll %d-%d (lpp: %d)\n", (int) rank, (int) proc_args->start_line, proc_args->start_line + proc_args->lpp - 2,proc_args->lpp);
 }
 
 
