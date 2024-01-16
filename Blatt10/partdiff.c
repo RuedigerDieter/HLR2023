@@ -78,6 +78,11 @@ static void zeroProcArgs(struct process_arguments* proc_args){
 	proc_args->start_line = 0;
 }
 
+
+/**
+ * initVariablesMPI: Initialisiere die globalen und Prozessspezifischen Variablen. 
+ * Rechnet u.a. aus, wie viele Zeilen jeder einzelne Prozess bearbeiten muss.
+*/
 static
 void
 initVariablesMPI (struct calculation_arguments* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args, int rank, int world_size){
@@ -94,20 +99,20 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 
 	uint64_t usable_lines = arguments->N+1-2;
 
-	//FIXME Halolines werden bei den Randrängen evtl doppelt belegt -> Mismatch zwischen Echter und Virtueller Position
 	uint64_t lpp = (usable_lines) / proc_args->world_size; // lines per process
 
+	/* Behandelt den Sonderfall, bei dem zu viele Prozesse für die gegebenen Interlines existieren.*/
 	if (!lpp)
 	{
 		world_size = usable_lines;
 		proc_args->lpp = 3;
 		proc_args->start_line = rank+1;
 
-	}else{
+	}
+	else
+	{
 		uint64_t lpp_pure = lpp;
 		uint64_t lpp_rest = (usable_lines) % proc_args->world_size; // rest lines per process
-
-		/* Wenn zu viele Prozesse, setze die Worldsize auf die nötige Anzahl runter	*/
 
 		lpp = lpp + (proc_args->rank < lpp_rest ? 1 : 0);
 		lpp += 2; // Platz für Halolines oben und unten
@@ -190,6 +195,11 @@ allocateMatrices (struct calculation_arguments* arguments)
 	}
 }
 
+
+/**
+ * allocateMatricesMPI: Reserviere Prozess-Matrizen, die später die Teilstücke der Gesamtmatrix beinhalten.
+ * Jede Matrix ist lpp Zeilen (meistens chunk + 2 Halolines) "hoch" und N + 1 Spalten breit.
+*/
 static
 void
 allocateMatricesMPI (struct calculation_arguments* arguments, struct process_arguments* proc_args)
@@ -255,6 +265,12 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 	}
 }
 
+
+/**
+ * initMatricesMPI: Initialisiere die Prozess-Matrizen.
+ * mit FPISIN nur mit 0,
+ * ohne FPISIN zusätzlich mit Rändern.
+*/
 static
 void
 initMatricesMPI (struct calculation_arguments* arguments, struct options const* options, struct process_arguments* proc_args)
@@ -321,7 +337,6 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 				global_pos = N - global_pos;
 			 	Matrix[j][i][N] = h * global_pos; // Rechte Kante
 			 }
-			printf("[%d] Finished right border\n", (int) rank);
 		}
 	}
 }
@@ -472,7 +487,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	if (rank >= world_size)
 	{
-		printf("[%d] Ueberfluessig, zurueck zu Main\n", (int) rank);
+		printf("[%d] Ueberfluessiger Prozess, zurueck zu Main\n", (int) rank);
 		return;
 	}
 
@@ -483,17 +498,17 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	}
 
 
+	/* Empfängt im Hintergrund die Präzision-erreicht-Nachricht*/
 	if(rank == 0 && options->termination == TERM_PREC){
 		//Beginne im Hintergrund das Empfangen der Nachricht von pN
 		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
-		// printf("[%d] Empfange PREC_REACHED von %d, %d\n", (int) rank, (int) world_size - 1, (int) term_iteration);
 	}
 
 	while (term_iteration > 0)
 	{
 		double** Matrix = arguments->Matrix[0];
 
-		//Erst senden der unbearbeiteten Topline
+		/* Sendet die oberste Zeile als Haloline für den Prozess drüber und Empfange die obere Haloline vom selbigen*/
 		if (above != invalid_rank)
 		{
 			if(sent_above_once)
@@ -503,14 +518,14 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			MPI_Issend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD, &halo_above);
 			sent_above_once = 1;
 
-			//printf("[%d] Empfange von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
 			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			//printf("[%d] Empfangen von %d, %d\n", (int) rank, (int) above, (int) term_iteration);
 			LAST_ITERATION = msg_buf_from_above[N + 1];
 			maxResiduum = msg_buf_from_above[N + 2];
 			Matrix[0] = msg_buf_from_above;
 		}
 
+		/* MaxResiduum-Kette*/
+		//FIXME
 		if(!rank){
 			maxResiduum = 0;
 		}else{
@@ -565,27 +580,28 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			}
 		}
 
-		// Setze eigenes maxResiduum auf localMaxResiduum
+		/* Setzt MaxResiduum*/
+		// FIXME
 		maxResiduum = localMaxResiduum;
 
+		/* Sendet die Daten an den nächsten Prozess*/
 		if (below != invalid_rank)
 		{
-			//Nach der Berechnung von Zeile N-1, baue Nachricht die abgeschickt werden muss.
+			/* Baut die Nachricht aus Haloline, MaxRes und Last_Iteration*/
 			memcpy(msg_buf_to_below, Matrix[lpp - 2], (N + 1) * sizeof(double));
 			msg_buf_to_below[N + 1] = LAST_ITERATION;
 			msg_buf_to_below[N + 2] = maxResiduum;
 
 			if(sent_below_once)
 			{
-				//printf("[%d] Warte auf Empfang von %d, %d\n", (int) rank, (int) below, (int) term_iteration);
 				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
 
 			MPI_Issend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
-			//printf("[%d] Gesendet an %d, %d\n", (int) rank, (int) below, (int) term_iteration);		
 			sent_below_once = 1;
 		}
 
+		/* Nur der letzte Prozess behandelt die Statistik*/
 		if (rank == world_size - 1)
 		{
 			results->stat_iteration++;
