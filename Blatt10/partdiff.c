@@ -114,22 +114,14 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 		
 		proc_args->lpp = lpp;
 
-		uint64_t start_line = 0;
-
-		//+1 offset for the first line
-		for(int i = 0; i < proc_args->rank; i++)
-		{
-			int lpp_for_i = lpp_pure + (i < lpp_rest ? 1 : 0);
-			int lpp_for_i_with_halo = lpp_for_i + 2;
-			start_line += lpp_for_i_with_halo - 1;
-		}
-		++start_line;
+		uint64_t start_line = rank * lpp_pure + (rank < lpp_rest ? rank : lpp_rest);
+		start_line += 1; // Platz für Haloline oben
 		
 		proc_args->start_line = start_line;
 	}
 
 	
-	printf("[%d] Handling ll %d-%d (lpp: %d)\n", (int) rank, (int) proc_args->start_line, proc_args->start_line + proc_args->lpp - 2,proc_args->lpp);
+	printf("[%d] Handling ll %d-%d (lpp: %d)\n", (int) rank, (int) proc_args->start_line, proc_args->start_line + proc_args->lpp - 3,proc_args->lpp);
 }
 
 
@@ -999,7 +991,7 @@ main (int argc, char** argv)
 	{
 		 // DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
 		int from = proc_args.start_line;
-		int to = proc_args.start_line + proc_args.lpp - 1;
+		int to = proc_args.start_line + proc_args.lpp - 3;
 
 		DisplayMatrix(&arguments, &results, &options, rank, world_size, from, to);
 	}
