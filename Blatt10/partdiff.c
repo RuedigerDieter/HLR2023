@@ -318,7 +318,7 @@ initMatricesMPI (struct calculation_arguments* arguments, struct options const* 
 			if(rank == world_size - 1) 
 			{
 				for(i = 0; i <= N; i++) {
-					Matrix[j][proc_args->lpp - 2][i] = 1 - (h * i);
+					Matrix[j][proc_args->lpp - 1][i] = 1 - (h * i);
 				}
 			}
 
