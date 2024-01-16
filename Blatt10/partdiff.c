@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <math.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include <sys/time.h>
 
 #include "partdiff.h"
@@ -987,7 +987,7 @@ main (int argc, char** argv)
 	{
 		 // DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
 		int from = proc_args.start_line;
-		int to = proc_args.start_line + proc_args.lpp - 3;
+		int to = proc_args.start_line + proc_args.lpp - 1;
 
 		DisplayMatrix(&arguments, &results, &options, rank, world_size, from, to);
 	}
