@@ -6,7 +6,7 @@ Program for calculation of partial differential equations.
     Andreas C. Schmidt, TU München.
 ============================================================
 
-Berechnungszeit:    0.352919 s 
+Berechnungszeit:    0.206751 s 
 Speicherbedarf:     2.070930 MiB
 Berechnungsmethode: Gauß-Seidel
 Interlines:         64

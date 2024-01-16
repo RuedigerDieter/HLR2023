@@ -97,7 +97,7 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	results->stat_iteration = 0;
 	results->stat_precision = 0;
 
-	uint64_t usable_lines = arguments->N+1-2;
+	uint64_t usable_lines = ((arguments->N)+1-2);
 
 	uint64_t lpp = (usable_lines) / proc_args->world_size; // lines per process
 

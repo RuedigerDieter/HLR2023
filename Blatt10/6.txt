@@ -1,8 +1,8 @@
 [3] Handling ll 262 (lpp: 88)
-[2] Handling ll 175 (lpp: 89)
-[4] Handling ll 348 (lpp: 88)
-[5] Handling ll 434 (lpp: 88)
 [1] Handling ll 88 (lpp: 89)
+[4] Handling ll 348 (lpp: 88)
+[2] Handling ll 175 (lpp: 89)
+[5] Handling ll 434 (lpp: 88)
 ============================================================
 Program for calculation of partial differential equations.  
 ============================================================
@@ -12,14 +12,14 @@ Program for calculation of partial differential equations.
 ============================================================
 
 [0] Handling ll 1 (lpp: 89)
-Berechnungszeit:    0.120007 s 
+Berechnungszeit:    0.097080 s 
 Speicherbedarf:     2.070930 MiB
 Berechnungsmethode: Gauß-Seidel
 Interlines:         64
 Stoerfunktion:      f(x,y) = 2pi^2*sin(pi*x)sin(pi*y)
 Terminierung:       Anzahl der Iterationen
 Anzahl Iterationen: 100
-Norm des Fehlers:   4.927463e-05
+Norm des Fehlers:   5.934784e-05
 
 Matrix:
  0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000
