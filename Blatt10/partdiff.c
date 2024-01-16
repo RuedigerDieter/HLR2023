@@ -85,7 +85,7 @@ static void zeroProcArgs(struct process_arguments* proc_args){
 */
 static
 void
-initVariablesMPI (struct calculation_arguments* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args, int rank, int world_size){
+initVariablesMPI (struct calculation_arguments* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args, uint64_t rank, int world_size){
 	arguments->N = (options->interlines * 8) + 9 - 1;
 	arguments->num_matrices = (options->method == METH_JACOBI) ? 2 : 1;
 	arguments->h = 1.0 / arguments->N;
@@ -119,14 +119,13 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 		
 		proc_args->lpp = lpp;
 
-		uint64_t start_line = rank * lpp_pure + (rank < lpp_rest ? rank : lpp_rest);
+		uint64_t start_line = rank * lpp_pure + (rank < lpp_rest) ?  rank : lpp_rest;
 		start_line += 1; // Platz für Haloline oben
 		
 		proc_args->start_line = start_line;
 	}
 
-	
-	//printf("[%d] Handling ll %d-%d (lpp: %d)\n", (int) rank, (int) proc_args->start_line, proc_args->start_line + proc_args->lpp - 3,proc_args->lpp);
+	printf("[%d] Handling ll %d (lpp: %d)\n", (int) rank, (int) proc_args->start_line, (int) proc_args->lpp);
 }
 
 
