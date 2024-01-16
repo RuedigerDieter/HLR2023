@@ -24,7 +24,10 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <math.h>
+//musste machen weil auf mac gabs aerger!
+#ifdef __linux__
 #include <malloc.h>
+#endif
 #include <sys/time.h>
 
 #include "partdiff.h"
