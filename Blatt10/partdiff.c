@@ -553,7 +553,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			if (options->inf_func == FUNC_FPISIN)
 			{
 				// fixme ? removed -1
-				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line));
+				fpisin_i = fpisin * sin(pih * (double) (i-1 + proc_args->start_line));
 			}
 
 			/* over all columns */
