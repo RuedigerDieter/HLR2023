@@ -559,6 +559,10 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 				Matrix[i][j] = star;
 			}
 		}
+
+		// Setze eigenes maxResiduum auf localMaxResiduum
+		maxResiduum = localMaxResiduum;
+
 		if (below != invalid_rank)
 		{
 			//Nach der Berechnung von Zeile N-1, baue Nachricht die abgeschickt werden muss.
@@ -576,9 +580,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			//printf("[%d] Gesendet an %d, %d\n", (int) rank, (int) below, (int) term_iteration);		
 			sent_below_once = 1;
 		}
-
-		// Setze eigenes maxResiduum auf localMaxResiduum
-		maxResiduum = localMaxResiduum;
 
 		if (rank == world_size - 1)
 		{
