@@ -118,7 +118,6 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 		lpp += 2; // Platz für Halolines oben und unten
 		
 		proc_args->lpp = lpp;
-
 		
 		uint64_t start_line_rest = (rank < lpp_rest) ? rank : lpp_rest;
 		uint64_t start_line = rank * lpp_pure + start_line_rest;
@@ -581,7 +580,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}
 
 		/* Setzt MaxResiduum*/
-		// FIXME
 		maxResiduum = localMaxResiduum;
 
 		/* Sendet die Daten an den nächsten Prozess*/
@@ -704,7 +702,7 @@ static void calculateMPI_Jacobi (struct calculation_arguments const* arguments, 
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
-				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line));
+				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1));
 			}
 
 			/* over all columns */
