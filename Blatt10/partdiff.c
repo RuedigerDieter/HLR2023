@@ -126,7 +126,7 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	}
 
 	
-	printf("[%d] Handling ll %d-%d (lpp: %d)\n", (int) rank, (int) proc_args->start_line, proc_args->start_line + proc_args->lpp - 3,proc_args->lpp);
+	//printf("[%d] Handling ll %d-%d (lpp: %d)\n", (int) rank, (int) proc_args->start_line, proc_args->start_line + proc_args->lpp - 3,proc_args->lpp);
 }
 
 
@@ -552,8 +552,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
-				// fixme ? removed -1
-				fpisin_i = fpisin * sin(pih * (double) (i-1 + proc_args->start_line));
+				/* Per Debugging sieht man, dass die aktuelle Berechnung mit der Sequentiellen übereinstimmt.*/
+				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1 ));
 			}
 
 			/* over all columns */
@@ -952,45 +952,45 @@ DisplayMatrix (struct calculation_arguments* arguments, struct calculation_resul
  * Mainly used for debugging.
  * vong Sebastian
  */
-static void DisplayWholeMatrix(struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size) {
+// static void DisplayWholeMatrix(struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size) {
   
-  int num_columns = arguments->N + 1;
-  // Loop over all Ranks
-  for (int i = 0; i < size; i++) {
-    // Only Rank 0 should print its first line
-    if (rank == 0 && i == 0) {
-      printf("Matrix:\n");
+//   int num_columns = arguments->N + 1;
+//   // Loop over all Ranks
+//   for (int i = 0; i < size; i++) {
+//     // Only Rank 0 should print its first line
+//     if (rank == 0 && i == 0) {
+//       printf("Matrix:\n");
       
-      for (int j = 0; j < num_columns; j++) {
-        printf("%7.9f ", arguments->Matrix[results->m][0][j]);
-      }
+//       for (int j = 0; j < num_columns; j++) {
+//         printf("%7.9f ", arguments->Matrix[results->m][0][j]);
+//       }
 
-      printf("\n");
-    }
+//       printf("\n");
+//     }
 
-    // Print the main part of the matrix, without the halo lines
-    // But only, if this is the current rank
-    if (rank == i) {
-      for (int j = 1; j < (int) arguments->num_rows - 1; j++) {
-        for (int k = 0; k < num_columns; k++) {
-          printf("%7.9f ", arguments->Matrix[results->m][j][k]);
-        }
-        printf("\n");
-      }
-    }
+//     // Print the main part of the matrix, without the halo lines
+//     // But only, if this is the current rank
+//     if (rank == i) {
+//       for (int j = 1; j < (int) arguments->num_rows - 1; j++) {
+//         for (int k = 0; k < num_columns; k++) {
+//           printf("%7.9f ", arguments->Matrix[results->m][j][k]);
+//         }
+//         printf("\n");
+//       }
+//     }
 
-    // Only Rank size - 1 should print its last line
-    if (rank == size - 1 && i == size - 1) {
-      for (int j = 0; j < num_columns; j++) {
-        printf("%7.9f ", arguments->Matrix[results->m][arguments->num_rows - 1][j]);
-      }
-      printf("\n");
-    }
+//     // Only Rank size - 1 should print its last line
+//     if (rank == size - 1 && i == size - 1) {
+//       for (int j = 0; j < num_columns; j++) {
+//         printf("%7.9f ", arguments->Matrix[results->m][arguments->num_rows - 1][j]);
+//       }
+//       printf("\n");
+//     }
 
-    // Barrier to make sure that the output is not mixed up
-    MPI_Barrier(MPI_COMM_WORLD);
-  }
-}
+//     // Barrier to make sure that the output is not mixed up
+//     MPI_Barrier(MPI_COMM_WORLD);
+//   }
+// }
 
 
 /* ************************************************************************ */
@@ -1057,8 +1057,8 @@ main (int argc, char** argv)
 		int from = proc_args.start_line;
 		int to = proc_args.start_line + proc_args.lpp - 3;
 
-		//DisplayMatrix(&arguments, &results, &options, rank, world_size, from, to);
-		DisplayWholeMatrix(&arguments, &results, &options, rank, world_size);
+		DisplayMatrix(&arguments, &results, &options, rank, world_size, from, to);
+		//DisplayWholeMatrix(&arguments, &results, &options, rank, world_size);
 	}
 	else
 	{
