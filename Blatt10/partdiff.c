@@ -119,7 +119,9 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 		
 		proc_args->lpp = lpp;
 
-		uint64_t start_line = rank * lpp_pure + (rank < lpp_rest) ?  rank : lpp_rest;
+		
+		uint64_t start_line_rest = (rank < lpp_rest) ? rank : lpp_rest;
+		uint64_t start_line = rank * lpp_pure + start_line_rest;
 		start_line += 1; // Platz für Haloline oben
 		
 		proc_args->start_line = start_line;
@@ -522,7 +524,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		}
 
 		/* MaxResiduum-Kette*/
-		//FIXME
 		if(!rank){
 			maxResiduum = 0;
 		}else{
@@ -553,6 +554,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			{
 				/* Per Debugging sieht man, dass die aktuelle Berechnung mit der Sequentiellen übereinstimmt.*/
 				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1 ));
+				// if (term_iteration == 1)
+				// 	printf("[%d] Berechne FPISIN für %d\n", (int) rank, (int) (i + proc_args->start_line - 1));
 			}
 
 			/* over all columns */
