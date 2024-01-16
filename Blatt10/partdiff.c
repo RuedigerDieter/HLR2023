@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <math.h>
-//#include <malloc.h>
+#include <malloc.h>
 #include <sys/time.h>
 
 #include "partdiff.h"
