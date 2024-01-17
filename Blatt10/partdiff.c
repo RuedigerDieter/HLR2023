@@ -104,7 +104,7 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 	/* Behandelt den Sonderfall, bei dem zu viele Prozesse für die gegebenen Interlines existieren.*/
 	if (!lpp)
 	{
-		world_size = usable_lines;
+		proc_args->world_size = usable_lines;
 		proc_args->lpp = 3;
 		proc_args->start_line = rank+1;
 
