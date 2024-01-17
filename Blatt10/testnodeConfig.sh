@@ -1,15 +1,37 @@
 #!/bin/bash
-#SBATCH -o output.out
-#SBATCH -p west
-#SBATCH --export=ALL
-#SBATCH -N 4
 
-for i in 1 2 3 4
-do
-    for j in 1 2 3 4
-    do
-        k=$((i*j))
-        echo "Nodes: $i, Tasks per Node: $j, Tasks: $k"
-        srun -p west --nodes $i --ntasks-per-node $j --ntasks $k ./run.sh | grep "Norm"
-    done
-done
+echo "1x1"
+srun -p west --nodes 1 --ntasks-per-node 1 ./run.sh | grep "Norm" 
+echo "1x2"
+srun -p west --nodes 1 --ntasks-per-node 2 ./run.sh | grep "Norm"
+echo "1x3"
+srun -p west --nodes 1 --ntasks-per-node 3 ./run.sh | grep "Norm"
+echo "1x4"
+srun -p west --nodes 1 --ntasks-per-node 4 ./run.sh | grep "Norm"
+
+echo "2x1"
+srun -p west --nodes 2 --ntasks-per-node 1 ./run.sh | grep "Norm"
+echo "2x2"
+srun -p west --nodes 2 --ntasks-per-node 2 ./run.sh | grep "Norm"
+echo "2x3"
+srun -p west --nodes 2 --ntasks-per-node 3 ./run.sh | grep "Norm"
+echo "2x4"
+srun -p west --nodes 2 --ntasks-per-node 4 ./run.sh | grep "Norm"
+
+echo "3x1"
+srun -p west --nodes 3 --ntasks-per-node 1 ./run.sh | grep "Norm"
+echo "3x2"
+srun -p west --nodes 3 --ntasks-per-node 2 ./run.sh | grep "Norm"
+echo "3x3"
+srun -p west --nodes 3 --ntasks-per-node 3 ./run.sh | grep "Norm"
+echo "3x4"
+srun -p west --nodes 3 --ntasks-per-node 4 ./run.sh | grep "Norm"
+
+echo "4x1"
+srun -p west --nodes 4 --ntasks-per-node 1 ./run.sh | grep "Norm"
+echo "4x2"
+srun -p west --nodes 4 --ntasks-per-node 2 ./run.sh | grep "Norm"
+echo "4x3"
+srun -p west --nodes 4 --ntasks-per-node 3 ./run.sh | grep "Norm"
+echo "4x4"
+srun -p west --nodes 4 --ntasks-per-node 4 ./run.sh | grep "Norm"
