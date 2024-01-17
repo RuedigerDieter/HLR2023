@@ -8,7 +8,7 @@ do
     for j in 1 2 3 4
     do
         k = $((i*j))
-        echo "Nodes: $i, Tasks per Node: $j"
-        srun --nodes $i --ntasks-per-node $j --ntasks $k ./run.sh | grep "Norm"
+        echo "Nodes: $i, Tasks per Node: $j, Tasks: $k"
+        mpiexec -p west --nodes $i --ntasks-per-node $j --ntasks $k ./run.sh | grep "Norm"
     done
 done
