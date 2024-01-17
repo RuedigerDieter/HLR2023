@@ -7,7 +7,8 @@ for i in 1 2 3 4
 do
     for j in 1 2 3 4
     do
+        k = $((i*j))
         echo "Nodes: $i, Tasks per Node: $j"
-        srun -nodes $i --ntasks-per-node $j ./run.sh | grep "Norm"
+        srun --nodes $i --ntasks-per-node $j --ntasks $k ./run.sh | grep "Norm"
     done
 done
