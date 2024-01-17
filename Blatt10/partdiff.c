@@ -400,6 +400,8 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 			{
 				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
+				printf("Element %d %d: %f\n", (int) i, (int) j, (double) star);
+
 				if (options->inf_func == FUNC_FPISIN)
 				{
 					star += fpisin_i * sin(pih * (double)j);
@@ -563,7 +565,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			for (j = 1; j < N; j++)
 			{
 				star = 0.25 * (Matrix[i-1][j] + Matrix[i][j-1] + Matrix[i][j+1] + Matrix[i+1][j]);
-				
+				printf("[%d] Element %d %d: %f\n", (int) rank, (int) + proc_args->start_line - i, (int) j, (double) star);
 
 				if (options->inf_func == FUNC_FPISIN)
 				{
