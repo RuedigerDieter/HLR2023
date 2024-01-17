@@ -126,7 +126,7 @@ initVariablesMPI (struct calculation_arguments* arguments, struct calculation_re
 		proc_args->start_line = start_line;
 	}
 
-	printf("[%d] Handling ll %d (lpp: %d)\n", (int) rank, (int) proc_args->start_line, (int) proc_args->lpp);
+	// printf("[%d] Handling ll %d (lpp: %d)\n", (int) rank, (int) proc_args->start_line, (int) proc_args->lpp);
 }
 
 
