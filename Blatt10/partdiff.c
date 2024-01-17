@@ -444,6 +444,8 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 /**
  * calculateMPI_GS
  * Berechnet die Matrix mit dem Gauß-Seidel-Verfahren.
+ * Known Issues/FIXME: Ab einer Interline-Zahl abhängig von Prozessanzahl kommt es zu Mismatch zwischen sequentieller und paralleler Berechnung.
+ * 
 */
 static void calculateMPI_GS (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
 {
