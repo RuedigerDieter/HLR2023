@@ -513,11 +513,11 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		/* Sendet die oberste Zeile als Haloline für den Prozess drüber und Empfange die obere Haloline vom selbigen*/
 		if (above != invalid_rank)
 		{
-			if(sent_above_once)
-			{
-				MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
-			}
-			MPI_Ssend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD, &halo_above);
+			// if(sent_above_once)
+			// {
+			// 	MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
+			// }
+			MPI_Ssend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD);
 			sent_above_once = 1;
 
 			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -594,12 +594,12 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			msg_buf_to_below[N + 1] = LAST_ITERATION;
 			msg_buf_to_below[N + 2] = maxResiduum;
 
-			if(sent_below_once)
-			{
-				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
-			}
+			// if(sent_below_once)
+			// {
+			// 	MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
+			// }
 
-			MPI_Ssend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
+			MPI_Ssend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD);
 			sent_below_once = 1;
 		}
 
