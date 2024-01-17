@@ -400,8 +400,6 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 			{
 				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
-				printf("Element %d %d: %f\n", (int) i, (int) j, (double) star);
-
 				if (options->inf_func == FUNC_FPISIN)
 				{
 					star += fpisin_i * sin(pih * (double)j);
@@ -446,8 +444,6 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 /**
  * calculateMPI_GS
  * Berechnet die Matrix mit dem Gauß-Seidel-Verfahren.
- * Known Issues/FIXME: Ab einer Interline-Zahl abhängig von Prozessanzahl kommt es zu Mismatch zwischen sequentieller und paralleler Berechnung.
- * Auch Abhängig von Knoten-Prozess-Konfiguration: Richtiges Ergebnis bei 1x6, falsch bei 2x3.
 */
 static void calculateMPI_GS (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
 {
@@ -472,10 +468,10 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 
 	MPI_Request request;
-	MPI_Request halo_above;
-	int sent_above_once = 0;
-	MPI_Request halo_below;
-	int sent_below_once = 0;
+	// MPI_Request halo_above;
+	// int sent_above_once = 0;
+	// MPI_Request halo_below;
+	// int sent_below_once = 0;
 	double msg_buf_to_below[(N + 1) +2];
 	double msg_buf_from_above[(N + 1) +2];
 
@@ -513,12 +509,16 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		/* Sendet die oberste Zeile als Haloline für den Prozess drüber und Empfange die obere Haloline vom selbigen*/
 		if (above != invalid_rank)
 		{
+
+			/** Issend ist prinzipiell schneller, wirft aber Probleme bei der Kommunikation zwischen mehreren Nodes auf,
+			 *	sodass das Ergebnis verfälscht wird
+			 */
 			// if(sent_above_once)
 			// {
 			// 	MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
 			// }
 			MPI_Ssend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD);
-			sent_above_once = 1;
+			// sent_above_once = 1;
 
 			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			LAST_ITERATION = msg_buf_from_above[N + 1];
@@ -565,7 +565,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			for (j = 1; j < N; j++)
 			{
 				star = 0.25 * (Matrix[i-1][j] + Matrix[i][j-1] + Matrix[i][j+1] + Matrix[i+1][j]);
-				printf("[%d] Element %d %d: %f\n", (int) rank, (int) i + proc_args->start_line - 1, (int) j, (double) star);
+				// printf("[%d] Element %d %d: %f\n", (int) rank, (int) i + proc_args->start_line - 1, (int) j, (double) star);
 
 				if (options->inf_func == FUNC_FPISIN)
 				{
@@ -600,7 +600,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			// }
 
 			MPI_Ssend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD);
-			sent_below_once = 1;
+			// sent_below_once = 1;
 		}
 
 		/* Nur der letzte Prozess behandelt die Statistik*/
