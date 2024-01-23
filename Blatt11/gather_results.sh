@@ -70,7 +70,7 @@ line_count=`echo "$line_count + 1" | bc`
 
 i=1   # Ignore first line in <case_file>
       # (this is the DUMMY_NAME line for documentation purposes)
-while [ $i -le $line_count ]; do
+while [[ $i -le $line_count ]]; do
     line=`head -$i ${case_file} | tail -n 1 `
     i=`echo "${i} + 1" | bc`
 
