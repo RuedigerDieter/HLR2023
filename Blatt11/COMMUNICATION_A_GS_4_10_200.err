@@ -1,0 +1,9 @@
+srun: Warning: can't honor --ntasks-per-node set to 3 which doesn't match the requested tasks 4 with the number of requested nodes 4. Ignoring --ntasks-per-node.
+slurmstepd-west7: error: *** STEP 173767.0 ON west7 CANCELLED AT 2024-01-22T18:09:59 DUE TO TIME LIMIT ***
+slurmstepd-west7: error: *** JOB 173767 ON west7 CANCELLED AT 2024-01-22T18:09:59 DUE TO TIME LIMIT ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+[proxy:0:0@west7] HYD_pmcd_pmip_control_cmd_cb (pm/pmiserv/pmip_cb.c:899): assert (!closed) failed
+[proxy:0:0@west7] HYDT_dmxu_poll_wait_for_event (tools/demux/demux_poll.c:76): callback returned error status
+[proxy:0:0@west7] main (pm/pmiserv/pmip.c:169): demux engine error waiting for event
+srun: got SIGCONT
+srun: error: west7: task 0: Exited with exit code 7
