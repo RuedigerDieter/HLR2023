@@ -87,5 +87,5 @@ for j in range(len(overall)):
 
 
 plt.tight_layout()  # Adjust the layout so that the subplots do not overlap
-#plt.savefig("all_plots.png")  # Save the figure with all subplots
+plt.savefig("plots.png")  # Save the figure with all subplots
 plt.show()  # Show the figure (remove this if you don't want to see it)
