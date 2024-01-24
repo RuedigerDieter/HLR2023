@@ -1,3 +1,4 @@
+[Score-P] src/measurement/scorep_runtime_management.c:333: Error: File does already exist: POSIX: Can't create experiment directory "/home/sharaf/HLR2023/Blatt11/tracing/scorep-measurement-tmp".
 ============================================================
 Program for calculation of partial differential equations.  
 ============================================================
@@ -6,6 +7,7 @@ Program for calculation of partial differential equations.
     Andreas C. Schmidt, TU München.
 ============================================================
 
+[Score-P] src/measurement/scorep_runtime_management.c:286: Error: File or directory does not exist: POSIX: Can't rename experiment directory "/home/sharaf/HLR2023/Blatt11/tracing/scorep-measurement-tmp" to "/home/sharaf/HLR2023/Blatt11/tracing/scorep-failed-20240124_1224_33901698395037460".
 ============================================================
 Program for calculation of partial differential equations.  
 ============================================================
@@ -14,15 +16,7 @@ Program for calculation of partial differential equations.
     Andreas C. Schmidt, TU München.
 ============================================================
 
-============================================================
-Program for calculation of partial differential equations.  
-============================================================
-(c) Dr. Thomas Ludwig, TU München.
-    Thomas A. Zochler, TU München.
-    Andreas C. Schmidt, TU München.
-============================================================
-
-Berechnungszeit:    0.118999 s 
+Berechnungszeit:    0.090030 s 
 Speicherbedarf:     2.070930 MiB
 Berechnungsmethode: Gauß-Seidel
 Interlines:         64
@@ -41,7 +35,7 @@ Matrix:
  0.0000 0.0002 0.0004 0.0005 0.0005 0.0005 0.0004 0.0002 0.0000
  0.0000 0.0001 0.0002 0.0003 0.0003 0.0003 0.0002 0.0001 0.0000
  0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000
-Berechnungszeit:    0.135721 s 
+Berechnungszeit:    0.092351 s 
 Speicherbedarf:     2.070930 MiB
 Berechnungsmethode: Gauß-Seidel
 Interlines:         64
@@ -60,8 +54,15 @@ Matrix:
  0.0000 0.0002 0.0004 0.0005 0.0005 0.0005 0.0004 0.0002 0.0000
  0.0000 0.0001 0.0002 0.0003 0.0003 0.0003 0.0002 0.0001 0.0000
  0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000
-[Score-P] src/measurement/scorep_runtime_management.c:376: Error: File or directory does not exist: POSIX: Can't rename experiment directory from "/home/sharaf/HLR2023/Blatt11/tracing/scorep-measurement-tmp" to "/home/sharaf/HLR2023/Blatt11/tracing/scorep-20240124_1212_1365794177466052".
-Berechnungszeit:    0.134644 s 
+============================================================
+Program for calculation of partial differential equations.  
+============================================================
+(c) Dr. Thomas Ludwig, TU München.
+    Thomas A. Zochler, TU München.
+    Andreas C. Schmidt, TU München.
+============================================================
+
+Berechnungszeit:    0.083851 s 
 Speicherbedarf:     2.070930 MiB
 Berechnungsmethode: Gauß-Seidel
 Interlines:         64
@@ -80,27 +81,11 @@ Matrix:
  0.0000 0.0002 0.0004 0.0005 0.0005 0.0005 0.0004 0.0002 0.0000
  0.0000 0.0001 0.0002 0.0003 0.0003 0.0003 0.0002 0.0001 0.0000
  0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000
-[Score-P] src/measurement/tracing/SCOREP_Tracing.c:446: Fatal: Could not finalize OTF2 event writer 1: The structural integrity is not given
-[Score-P] Please report this to support@score-p.org. Thank you.
-[Score-P] Try also to preserve any generated core dumps.
-[Score-P] src/measurement/tracing/SCOREP_Tracing.c:446: Fatal: Could not finalize OTF2 event writer 0: The structural integrity is not given
-[Score-P] Please report this to support@score-p.org. Thank you.
-[Score-P] Try also to preserve any generated core dumps.
-srun: error: west9: task 1: Exited with exit code 1
-
-===================================================================================
-=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
-=   PID 32395 RUNNING AT west9
-=   EXIT CODE: 134
-=   CLEANING UP REMAINING PROCESSES
-=   YOU CAN IGNORE THE BELOW CLEANUP MESSAGES
-===================================================================================
-[proxy:0:1@west10] HYD_pmcd_pmip_control_cmd_cb (pm/pmiserv/pmip_cb.c:899): assert (!closed) failed
-[proxy:0:1@west10] HYDT_dmxu_poll_wait_for_event (tools/demux/demux_poll.c:76): callback returned error status
-[proxy:0:1@west10] main (pm/pmiserv/pmip.c:169): demux engine error waiting for event
-srun: error: west10: task 1: Exited with exit code 7
-[mpiexec@west10] HYDT_bscu_wait_for_completion (tools/bootstrap/utils/bscu_wait.c:73): one of the processes terminated badly; aborting
-[mpiexec@west10] HYDT_bsci_wait_for_completion (tools/bootstrap/src/bsci_wait.c:21): launcher returned error waiting for completion
-[mpiexec@west10] HYD_pmci_wait_for_completion (pm/pmiserv/pmiserv_pmci.c:179): launcher returned error waiting for completion
-[mpiexec@west10] main (ui/mpich/mpiexec.c:325): process manager error waiting for completion
-srun: error: west10: task 2: Exited with exit code 255
+rank[0]:	 frequency = 2666826482 Hz
+rank[1]:	 frequency = 2666810271 Hz
+rank[2]:	 frequency = 2666914884 Hz (outlier)
+rank[3]:	 frequency = 2666811766 Hz
+rank[4]:	 frequency = 2666816254 Hz
+[Score-P] src/services/timer/SCOREP_Timer.c:390: Warning: Calculated timer (tsc) frequencies differ from average frequency (2666835931 Hz) by more than 26668 Hz. Consider using a timer with a fixed frequency like gettimeofday or clock_gettime. Prolonging the measurement duration might mitigate the frequency variations.
+[Score-P] src/measurement/scorep_runtime_management.c:376: Error: File or directory does not exist: POSIX: Can't rename experiment directory from "/home/sharaf/HLR2023/Blatt11/tracing/scorep-measurement-tmp" to "/home/sharaf/HLR2023/Blatt11/tracing/scorep-20240124_1224_33901699628545020".
+srun: error: west6: task 2: Exited with exit code 1
