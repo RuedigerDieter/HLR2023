@@ -89,3 +89,37 @@ for j in range(len(overall)):
 plt.tight_layout()  # Adjust the layout so that the subplots do not overlap
 plt.savefig("plots.png")  # Save the figure with all subplots
 plt.show()  # Show the figure (remove this if you don't want to see it)
+
+#reset plot for second plot
+fig = plt.figure(figsize=(10, 10))  # Create a new figure with a custom size (you can adjust the size as needed)
+
+for j in range(len(overall)):
+    ax = fig.add_subplot(3, 2, j+1) 
+    xlabel = "None"
+    ylabel = "Time in s"
+    if j == 4 or j == 5: # weak scaling
+        xlabel = "Lines per Process"
+        xvals = overall[j][:,2] / overall[j][:,0]
+        yvals = overall[j][:,3]
+    elif j == 0 or j == 1:
+        xlabel = "Number of Nodes"
+        xvals = overall[j][:,1]
+        yvals = overall[j][:,3]
+    else:
+        xlabel = "Number of Processes"
+        xvals = overall[j][:,0]
+        yvals = overall[j][:,3]
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    data = list(zip(xvals, yvals))
+    table = ax.table(cellText=data, loc='upper left', colLabels=[xlabel, ylabel])
+    #set space not so big
+    table.scale(1, 1.5)
+    table.auto_set_font_size(True)
+    ax.set_title(names[j])
+    #lower margin
+    plt.subplots_adjust(bottom=0.2)
+    ax.axis('off')
+
+plt.savefig("tables.png")  # Save the figure with all subplots
+plt.show()  # Show the figure (remove this if you don't want to see it)
