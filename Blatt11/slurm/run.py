@@ -9,7 +9,7 @@ for filename in os.listdir(directory):
     f = os.path.join(directory, filename)
     # checking if it is a file
     if os.path.isfile(f):
-        if filename.endswith(".out"):
-            print("./gather_results.sh " + filename)
-            os.system("./gather_results.sh " + filename)
-            #os.system("sbatch slurm/" + filename)
+        if filename.endswith(".job") and filename.startswith("COMMUNICATION_A_GS_"):
+            #print("./gather_results.sh " + filename)
+            #os.system("./gather_results.sh " + filename)
+            os.system("sbatch " + filename)
