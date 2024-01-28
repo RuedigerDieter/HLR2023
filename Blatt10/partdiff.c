@@ -521,7 +521,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			// {
 			// 	MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
 			// }
-			MPI_Issend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD,halo_above);
+			MPI_Issend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD,&halo_above);
 			// sent_above_once = 1;
 
 			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
