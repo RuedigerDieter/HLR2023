@@ -528,6 +528,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
+			printf("[%d] Haloline von oben empfangen\n", (int) rank);
+
 			LAST_ITERATION = msg_buf_from_above[N + 1];
 			maxResiduum = msg_buf_from_above[N + 2];
 			Matrix[0] = msg_buf_from_above;
@@ -561,6 +563,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			if(i == lpp - 2 && below != invalid_rank){
 				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
+				printf("[%d] Haloline von unten empfangen\n", (int) rank);
 			}
 
 			double fpisin_i = 0.0;
