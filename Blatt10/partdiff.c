@@ -894,6 +894,10 @@ displayMatrix (struct calculation_arguments* arguments, struct calculation_resul
 static void
 DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
 {
+  if (rank > size)
+	return;
+
+
   int const elements = 8 * options->interlines + 9;
 
   int x, y;
@@ -1074,7 +1078,7 @@ main (int argc, char** argv)
 		int from = proc_args.start_line;
 		int to = proc_args.start_line + proc_args.lpp - 3;
 
-		DisplayMatrix(&arguments, &results, &options, rank, world_size, from, to);
+		DisplayMatrix(&arguments, &results, &options, rank, proc_args.world_size, from, to);
 		//DisplayWholeMatrix(&arguments, &results, &options, rank, world_size);
 	}
 	else
