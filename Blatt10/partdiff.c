@@ -485,8 +485,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	int term_iteration = options->term_iteration;
 
-	printf("[%d] Starting GS calculation\n", (int) rank);
-
 	if (rank >= world_size)
 	{
 		printf("[%d] Ueberfluessiger Prozess, zurueck zu Main\n", (int) rank);
@@ -504,7 +502,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	if(rank == 0 && options->termination == TERM_PREC){
 		//Beginne im Hintergrund das Empfangen der Nachricht von pN
 		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
-		MPI_Wait(&request, MPI_STATUS_IGNORE);
 		// recv_N_to_0 = 1; 
 	}
 
@@ -527,9 +524,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			// sent_above_once = 1;
 
 			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
-			printf("[%d] Haloline von oben empfangen\n", (int) rank);
-
+			//MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
 			LAST_ITERATION = msg_buf_from_above[N + 1];
 			maxResiduum = msg_buf_from_above[N + 2];
 			Matrix[0] = msg_buf_from_above;
@@ -550,9 +545,10 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
 			if (rank == 0)
 			{
-				// if(MPI_Test(&request, &N_to_0_PREC_REACHED, MPI_STATUS_IGNORE) == MPI_SUCCESS)
+				//if(MPI_Test(&request, &N_to_0_PREC_REACHED, MPI_STATUS_IGNORE) == MPI_SUCCESS)
 					LAST_ITERATION = (double) N_to_0_PREC_REACHED;
-					MPI_Wait(&request, MPI_STATUS_IGNORE);
+				MPI_Wait(&request, MPI_STATUS_IGNORE);
+
 			}
 		}
 		
@@ -562,8 +558,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			/*Vor der Berechnung von Zeile N-1 (lpp-2), muss Zeile N (lpp-1) empfangen werden vom Prozess darunter*/
 			if(i == lpp - 2 && below != invalid_rank){
 				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
-				printf("[%d] Haloline von unten empfangen\n", (int) rank);
+				//MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
 
 			double fpisin_i = 0.0;
