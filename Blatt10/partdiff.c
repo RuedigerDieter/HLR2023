@@ -1066,6 +1066,7 @@ main (int argc, char** argv)
 	if (!rank)
 	{
 		displayStatistics(&arguments, &results, &options);
+		printf("MPI: %d Prozesse\n", world_size);
 	}
 	if (world_size != 1)
 	{
