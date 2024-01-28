@@ -480,6 +480,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	//Wird von pN benutzt, um zu signalisieren, dass die Präzision erreicht wurde
 	//Wird von p0 benutzt, empfaengt von pN, ob Präzision erreicht wurde
 	int N_to_0_PREC_REACHED = 0;
+	int send_N_to_0 = 0;
+	int recv_N_to_0 = 0;
 
 	int term_iteration = options->term_iteration;
 
@@ -500,6 +502,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	if(rank == 0 && options->termination == TERM_PREC){
 		//Beginne im Hintergrund das Empfangen der Nachricht von pN
 		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
+		recv_N_to_0 = 1; 
 	}
 
 	while (term_iteration > 0)
@@ -540,7 +543,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		if(options->termination == TERM_PREC){
 			/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
 			if (rank == 0)
-				LAST_ITERATION = (double) N_to_0_PREC_REACHED;
+				if(MPI_Test(&request, &N_to_0_PREC_REACHED, MPI_STATUS_IGNORE) == MPI_SUCCESS)
+					LAST_ITERATION = (double) N_to_0_PREC_REACHED;
 		}
 		
 		/* over all rows */
@@ -618,6 +622,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			{
 				N_to_0_PREC_REACHED = 1;
 				MPI_Issend(&N_to_0_PREC_REACHED, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
+				send_N_to_0 = 1;
 				// printf("[%d] Sende PREC_REACHED an %d, %d\n", (int) rank, (int) 0, (int) term_iteration);
 			}
 			if (LAST_ITERATION)
@@ -630,6 +635,10 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		{
 			term_iteration--;
 		}
+	}
+
+	if(send_N_to_0 || recv_N_to_0){
+		MPI_Wait(&request, MPI_STATUS_IGNORE);
 	}
 
 	/* Rang 0 übernimmt alle Display-Aufgaben */
