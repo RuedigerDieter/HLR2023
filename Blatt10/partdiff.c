@@ -485,6 +485,8 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 	int term_iteration = options->term_iteration;
 
+	printf("[%d] Starting GS calculation\n", (int) rank);
+
 	if (rank >= world_size)
 	{
 		printf("[%d] Ueberfluessiger Prozess, zurueck zu Main\n", (int) rank);
