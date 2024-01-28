@@ -545,8 +545,9 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		if(options->termination == TERM_PREC){
 			/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
 			if (rank == 0)
-				if(MPI_Test(&request, &N_to_0_PREC_REACHED, MPI_STATUS_IGNORE) == MPI_SUCCESS)
+				// if(MPI_Test(&request, &N_to_0_PREC_REACHED, MPI_STATUS_IGNORE) == MPI_SUCCESS)
 					LAST_ITERATION = (double) N_to_0_PREC_REACHED;
+					MPI_Wait(&request, MPI_STATUS_IGNORE);
 		}
 		
 		/* over all rows */
