@@ -500,6 +500,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 	if(rank == 0 && options->termination == TERM_PREC){
 		//Beginne im Hintergrund das Empfangen der Nachricht von pN
 		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
+		MPI_Wait(&request, MPI_STATUS_IGNORE);
 	}
 
 	while (term_iteration > 0)
