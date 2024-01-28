@@ -468,9 +468,9 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 
 	MPI_Request request;
-	// MPI_Request halo_above;
+	MPI_Request halo_above;
 	// int sent_above_once = 0;
-	// MPI_Request halo_below;
+	MPI_Request halo_below;
 	// int sent_below_once = 0;
 	double msg_buf_to_below[(N + 1) +2];
 	double msg_buf_from_above[(N + 1) +2];
@@ -518,10 +518,11 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			// {
 			// 	MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
 			// }
-			MPI_Ssend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD);
+			MPI_Issend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD,halo_above);
 			// sent_above_once = 1;
 
 			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
 			LAST_ITERATION = msg_buf_from_above[N + 1];
 			maxResiduum = msg_buf_from_above[N + 2];
 			Matrix[0] = msg_buf_from_above;
@@ -550,6 +551,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			/*Vor der Berechnung von Zeile N-1 (lpp-2), muss Zeile N (lpp-1) empfangen werden vom Prozess darunter*/
 			if(i == lpp - 2 && below != invalid_rank){
 				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			}
 
 			double fpisin_i = 0.0;
@@ -600,7 +602,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			// 	MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
 			// }
 
-			MPI_Ssend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD);
+			MPI_Issend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
 			// sent_below_once = 1;
 		}
 
