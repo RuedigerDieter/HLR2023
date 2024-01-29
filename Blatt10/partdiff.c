@@ -444,7 +444,95 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 
 static void calculateMPI_GS (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args);
 {
+	/* Deklariere und Initialisiere Variablen */
+	/* Rechnungs-Variablen */
+
+	int i, j;           /* local variables for loops */
+	double star;        /* four times center value minus 4 neigh.b values */
+	double residuum;    /* residuum of current iteration */
+
+	int const N = arguments->N;
+	double const h = arguments->h;
+	int term_iteration = options->term_iteration;
+
+	double pih = 0.0;
+	double fpisin = 0.0;
+	double maxResiduum = 0.0;
+	double localMaxResiduum = 0.0;
+
+	double** Matrix = arguments->Matrix[0];
+
+
+	/* MPI-Variablen */
+	uint64_t rank = proc_args->rank;
+	uint64_t world_size = proc_args->world_size;
+	int lpp = proc_args->lpp;
+
+	/* Kommunikations-Variablen */
+	const uint64_t invalid_rank = world_size + 1;
+	uint64_t above = (proc_args->rank == 0) ? invalid_rank : proc_args->rank - 1;
+	uint64_t below = (proc_args->rank == proc_args->world_size - 1) ? invalid_rank : proc_args->rank + 1;
+
+	MPI_Request PREC_TERM;
+	MPI_Request HALO_A, HALO_B;
+
+	double s_buf_halo_prec[N + 1 + 2];
+	double r_buf_halo_prec[N + 1 + 2];
+
+	double s_LAST_ITERATION, r_LAST_ITERATION;
+
+	/* Breche überflüssige Prozesse ab */
+	if (rank >= world_size)
+	{
+		printf("[%d] Ueberfluessiger Prozess, zurueck zu Main\n", (int) rank);
+		return;
+	}
+
+	/* FPISIN-Berechnung */
+	if (options->inf_func == FUNC_FPISIN)
+	{
+		pih = PI * h;
+		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
+	}
 	
+
+	/* Star-Berechnung */
+	while (term_iteration > 0)
+	{
+		/**
+		 *	Wenn erste Zeile:
+		 *		Empfange Haloline von oben
+		 *		Empfange MaxRes, Abbruch
+		 *		Setze MaxResiduum zurück
+		 *	Wenn letzte Zeile:
+		 *		Sende Haloline nach unten
+		 * 		Sende MaxRes nach unten
+		 */
+
+		 for (i = 1; i < lpp - 1; i++)
+		 {
+			for (j = 1; j < N; j++)
+			{
+				star = 0.25 * (Matrix[i-1][j] + Matrix[i][j-1] + Matrix[i][j+1] + Matrix[i+1][j]);
+
+				if (options->inf_func == FUNC_FPISIN)
+				{
+					star += fpisin * sin(pih * (double) j);
+				}
+
+				if (options->termination == TERM_PREC || term_iteration == 1)
+				{
+					residuum = Matrix[i][j] - star;
+					residuum = (residuum < 0) ? -residuum : residuum;
+					localMaxResiduum = (residuum < localMaxResiduum) ? localMaxResiduum : residuum;
+				}
+
+				Matrix[i][j] = star;
+			}
+		 }
+	}
+
+
 }
 
 /**
