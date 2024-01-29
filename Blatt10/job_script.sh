@@ -5,4 +5,5 @@
 #SBATCH -p west
 #SBATCH --export=ALL
 ./run.sh > para.txt
-
+./run1.sh > para1.txt
+./run2.sh > para2.txt
