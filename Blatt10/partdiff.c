@@ -441,11 +441,17 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 	results->m = m2;
 }
 
+
+static void calculateMPI_GS (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args);
+{
+	
+}
+
 /**
  * calculateMPI_GS
  * Berechnet die Matrix mit dem Gauß-Seidel-Verfahren.
 */
-static void calculateMPI_GS (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
+static void calculateMPI_GS_old (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
 {
 	int i, j;           /* local variables for loops */
 	double star;        /* four times center value minus 4 neigh.b values */
