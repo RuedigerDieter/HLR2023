@@ -623,11 +623,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			{
 				N_to_0_PREC_REACHED = 1;
 				MPI_Issend(&N_to_0_PREC_REACHED, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
-				printf("[%d] Sende PREC_REACHED an %d, %d\n", (int) rank, (int) 0, (int) term_iteration);
-			}
-			else if (rank == world_size -1)
-			{
-				printf("[%d] %e > %e\n", (int) rank, (double) maxResiduum, (double) options->term_precision);
 			}
 			if (LAST_ITERATION)
 			{
