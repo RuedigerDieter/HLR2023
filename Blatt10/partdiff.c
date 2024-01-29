@@ -442,7 +442,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 }
 
 
-static void calculateMPI_GS (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args);
+static void calculateMPI_GS (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
 {
 	/* Deklariere und Initialisiere Variablen */
 	/* Rechnungs-Variablen */
@@ -464,22 +464,28 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 
 	/* MPI-Variablen */
-	uint64_t rank = proc_args->rank;
-	uint64_t world_size = proc_args->world_size;
+	const uint64_t rank = proc_args->rank;
+	const uint64_t world_size = proc_args->world_size;
 	int lpp = proc_args->lpp;
+
+	const int LAST_RANK = rank == world_size - 1;
+	const int FIRST_RANK = rank == 0;
 
 	/* Kommunikations-Variablen */
 	const uint64_t invalid_rank = world_size + 1;
-	uint64_t above = (proc_args->rank == 0) ? invalid_rank : proc_args->rank - 1;
-	uint64_t below = (proc_args->rank == proc_args->world_size - 1) ? invalid_rank : proc_args->rank + 1;
+	uint64_t above = FIRST_RANK ? invalid_rank : proc_args->rank - 1;
+	uint64_t below = LAST_RANK ? invalid_rank : proc_args->rank + 1;
 
 	MPI_Request PREC_TERM;
 	MPI_Request HALO_A, HALO_B;
+	int SENT_A = 1;
+	int SENT_B = 1;
 
 	double s_buf_halo_prec[N + 1 + 2];
 	double r_buf_halo_prec[N + 1 + 2];
 
-	double s_LAST_ITERATION, r_LAST_ITERATION;
+	const double s_LAST_ITERATION = 1;
+	double r_LAST_ITERATION;
 
 	/* Breche überflüssige Prozesse ab */
 	if (rank >= world_size)
@@ -495,6 +501,12 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
 	}
 	
+	/* PREC-TERM empfangen */
+	if (FIRST_RANK && options->termination == TERM_PREC)
+	{
+		printf("Empfange PREC_TERM\n");
+		MPI_Irecv(&r_LAST_ITERATION, 1, MPI_DOUBLE, LAST_RANK, 0, MPI_COMM_WORLD, &PREC_TERM);
+	}
 
 	/* Star-Berechnung */
 	while (term_iteration > 0)
@@ -511,13 +523,46 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 		 for (i = 1; i < lpp - 1; i++)
 		 {
+			printf("[%d] Berechne Zeile %d\n", (int) rank, (int) i);
+			double fpisin_i = 0.0;
+
+			if (options->inf_func == FUNC_FPISIN)
+			{
+				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1));
+			}
+
+			if (i == 1)
+			{
+				if (FIRST_RANK)
+					maxResiduum = 0;
+				else
+				{
+					printf("[%d] Empfange Haloline von oben\n", (int) rank);
+					/* Empfange Haloline und MaxRes von oben */
+					MPI_Recv(r_buf_halo_prec, N + 1 + 2, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					
+					Matrix[0] = r_buf_halo_prec;
+
+					
+					r_LAST_ITERATION = r_buf_halo_prec[N + 1];
+					maxResiduum = r_buf_halo_prec[N + 2];
+					// memcpy(Matrix[0], r_buf_halo_prec, (N + 1) * sizeof(double));
+
+					localMaxResiduum = maxResiduum;
+				}	
+			}
+			else if (i == lpp - 1)
+			{
+				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+
 			for (j = 1; j < N; j++)
 			{
 				star = 0.25 * (Matrix[i-1][j] + Matrix[i][j-1] + Matrix[i][j+1] + Matrix[i+1][j]);
 
 				if (options->inf_func == FUNC_FPISIN)
 				{
-					star += fpisin * sin(pih * (double) j);
+					star += fpisin_i * sin(pih * (double) j);
 				}
 
 				if (options->termination == TERM_PREC || term_iteration == 1)
@@ -529,231 +574,87 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 				Matrix[i][j] = star;
 			}
-		 }
-	}
 
-
-}
-
-/**
- * calculateMPI_GS
- * Berechnet die Matrix mit dem Gauß-Seidel-Verfahren.
-*/
-static void calculateMPI_GS_old (struct calculation_arguments const* arguments, struct calculation_results* results, struct options const* options, struct process_arguments* proc_args)
-{
-	int i, j;           /* local variables for loops */
-	double star;        /* four times center value minus 4 neigh.b values */
-	double residuum;    /* residuum of current iteration */
-
-	int const N = arguments->N;
-	double const h = arguments->h;
-
-	double pih = 0.0;
-	double fpisin = 0.0;
-	double maxResiduum = 0.0;
-	double localMaxResiduum = 0.0;
-	
-	uint64_t rank = proc_args->rank;
-	uint64_t world_size = proc_args->world_size;
-	const uint64_t invalid_rank = world_size + 1;
-	uint64_t above = (proc_args->rank == 0) ? invalid_rank : proc_args->rank - 1;
-	uint64_t below = (proc_args->rank == proc_args->world_size - 1) ? invalid_rank : proc_args->rank + 1;
-	int lpp = proc_args->lpp;
-
-
-	MPI_Request request;
-	MPI_Request halo_above;
-	// int sent_above_once = 0;
-	MPI_Request halo_below;
-	// int sent_below_once = 0;
-	double msg_buf_to_below[(N + 1) +2];
-	double msg_buf_from_above[(N + 1) +2];
-
-	//Diese Variable hat jeder Prozess
-	double LAST_ITERATION = 0; 
-	//Wird von pN benutzt, um zu signalisieren, dass die Präzision erreicht wurde
-	//Wird von p0 benutzt, empfaengt von pN, ob Präzision erreicht wurde
-	int N_to_0_PREC_REACHED = 0;
-	// int send_N_to_0 = 0;
-	// int recv_N_to_0 = 0;
-
-	int term_iteration = options->term_iteration;
-
-	if (rank >= world_size)
-	{
-		printf("[%d] Ueberfluessiger Prozess, zurueck zu Main\n", (int) rank);
-		return;
-	}
-
-	if (options->inf_func == FUNC_FPISIN)
-	{
-		pih = PI * h;
-		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
-	}
-
-
-	/* Empfängt im Hintergrund die Präzision-erreicht-Nachricht*/
-	if(rank == 0 && options->termination == TERM_PREC){
-		//Beginne im Hintergrund das Empfangen der Nachricht von pN
-		MPI_Irecv(&N_to_0_PREC_REACHED, 1, MPI_INT, world_size - 1, 0, MPI_COMM_WORLD, &request);
-		// recv_N_to_0 = 1; 
-	}
-
-	while (term_iteration > 0)
-	{
-		double** Matrix = arguments->Matrix[0];
-
-		/* Sendet die oberste Zeile als Haloline für den Prozess drüber und Empfange die obere Haloline vom selbigen*/
-		if (above != invalid_rank)
-		{
-
-			/** Issend ist prinzipiell schneller, wirft aber Probleme bei der Kommunikation zwischen mehreren Nodes auf,
-			 *	sodass das Ergebnis verfälscht wird
-			 */
-			// if(sent_above_once)
-			// {
-			// 	MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
-			// }
-			MPI_Issend(Matrix[1], N + 1, MPI_DOUBLE, above, 2, MPI_COMM_WORLD,&halo_above);
-			// sent_above_once = 1;
-
-			MPI_Recv(msg_buf_from_above, N + 1 + 1 + 1, MPI_DOUBLE, above, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			//MPI_Wait(&halo_above, MPI_STATUS_IGNORE);
-			LAST_ITERATION = msg_buf_from_above[N + 1];
-			maxResiduum = msg_buf_from_above[N + 2];
-			Matrix[0] = msg_buf_from_above;
-		}
-
-		/* MaxResiduum-Kette*/
-		if(!rank){
-			maxResiduum = 0;
-		}else{
-			localMaxResiduum = maxResiduum;
-		}		
-
-		/*
-			Nur bei Praezisionsabbruch wird geprueft, ob Prozess 0 die Nachricht von Prozess N erhaelt,
-			dass alles vorbei ist
-		*/
-		if(options->termination == TERM_PREC){
-			/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
-			if (rank == 0)
+			if (i == 1)
 			{
-				//if(MPI_Test(&request, &N_to_0_PREC_REACHED, MPI_STATUS_IGNORE) == MPI_SUCCESS)
-					LAST_ITERATION = (double) N_to_0_PREC_REACHED;
-				MPI_Wait(&request, MPI_STATUS_IGNORE);
-
-			}
-		}
-		
-		/* over all rows */
-		for (i = 1; i < lpp - 1; i++)
-		{	
-			/*Vor der Berechnung von Zeile N-1 (lpp-2), muss Zeile N (lpp-1) empfangen werden vom Prozess darunter*/
-			if(i == lpp - 2 && below != invalid_rank){
-				MPI_Recv(Matrix[lpp - 1], N + 1, MPI_DOUBLE, below, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-				//MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
-			}
-
-			double fpisin_i = 0.0;
-
-			if (options->inf_func == FUNC_FPISIN)
-			{
-				/* Per Debugging sieht man, dass die aktuelle Berechnung mit der Sequentiellen übereinstimmt.*/
-				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1 ));
-				// if (term_iteration == 1)
-				// 	printf("[%d] Berechne FPISIN für %d\n", (int) rank, (int) (i + proc_args->start_line - 1));
-			}
-
-			/* over all columns */
-			for (j = 1; j < N; j++)
-			{
-				star = 0.25 * (Matrix[i-1][j] + Matrix[i][j-1] + Matrix[i][j+1] + Matrix[i+1][j]);
-				// printf("[%d] Element %d %d: %f\n", (int) rank, (int) i + proc_args->start_line - 1, (int) j, (double) star);
-
-				if (options->inf_func == FUNC_FPISIN)
+				if (!FIRST_RANK)
 				{
-					star += fpisin_i * sin(pih * (double)j);
-				}
-				
-				if (options->termination == TERM_PREC || term_iteration == 1)
+					printf("[%d] Sende obere Haloline nach oben\n", (int) rank);
+					if (!SENT_A)
 					{
-						residuum = Matrix[i][j] - star;
-						residuum = (residuum < 0) ? -residuum : residuum;
-						localMaxResiduum = (residuum < localMaxResiduum) ? localMaxResiduum : residuum;
+						MPI_Wait(&HALO_A, MPI_STATUS_IGNORE);
 					}
+					MPI_Issend(Matrix[1], N + 1, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, &HALO_A);
+					SENT_A = 0;
+				}
+			}
+			else if (i == lpp - 2)
+			{
+				if (LAST_RANK)
+				{
+					results->stat_iteration++;
+					results->stat_precision = localMaxResiduum;
+				}
+				else
+				{
+					/* Baue Nachricht für Versenden nach unten */
+					memcpy(s_buf_halo_prec, Matrix[lpp - 2], (N + 1) * sizeof(double));
+					s_buf_halo_prec[N + 1] = r_LAST_ITERATION;
+					s_buf_halo_prec[N + 2] = localMaxResiduum;
 
-				Matrix[i][j] = star;
+					printf("[%d] Sende untere Haloline nach unten\n", (int) rank);
+					/* Sende Haloline und MaxRes nach unten */
+					if (!SENT_B)
+					{
+						MPI_Wait(&HALO_B, MPI_STATUS_IGNORE);
+					}
+					MPI_Issend(s_buf_halo_prec, N + 1 + 2, MPI_DOUBLE, below, 0, MPI_COMM_WORLD, &HALO_B);
+					SENT_B = 0;
+					printf("[%d] Untere Haloline nach unten gesendet\n", (int) rank);
+				}
 			}
 		}
 
-		/* Setzt MaxResiduum*/
-		maxResiduum = localMaxResiduum;
-
-		/* Sendet die Daten an den nächsten Prozess*/
-		if (below != invalid_rank)
-		{
-			/* Baut die Nachricht aus Haloline, MaxRes und Last_Iteration*/
-			memcpy(msg_buf_to_below, Matrix[lpp - 2], (N + 1) * sizeof(double));
-			msg_buf_to_below[N + 1] = LAST_ITERATION;
-			msg_buf_to_below[N + 2] = maxResiduum;
-
-			// if(sent_below_once)
-			// {
-			// 	MPI_Wait(&halo_below, MPI_STATUS_IGNORE);
-			// }
-
-			MPI_Issend(msg_buf_to_below, N + 1 + 1 + 1, MPI_DOUBLE, below, 1, MPI_COMM_WORLD, &halo_below);
-			// sent_below_once = 1;
-		}
-
-		/* Nur der letzte Prozess behandelt die Statistik*/
-		if (rank == world_size - 1)
-		{
-			results->stat_iteration++;
-			results->stat_precision = maxResiduum;
-		}
-
-		/* check for stopping calculation depending on termination method */		
 		if (options->termination == TERM_PREC)
 		{
-			//Nur der letzte Prozess haelt das globale maxRes, deswegen schickt er die Abbruchsnachricht an Prozess 0
-			if (maxResiduum < options->term_precision && rank == world_size - 1)
+			if (FIRST_RANK)
 			{
-				N_to_0_PREC_REACHED = 1;
-				MPI_Issend(&N_to_0_PREC_REACHED, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
-				//send_N_to_0 = 1;
-				// printf("[%d] Sende PREC_REACHED an %d, %d\n", (int) rank, (int) 0, (int) term_iteration);
+				printf("[%d] Prüfe ob Präzision erreicht wurde\n", (int) rank);
+				int TERM_SENT = 0;
+				MPI_Test(&PREC_TERM, &TERM_SENT, MPI_STATUS_IGNORE);
+				if (TERM_SENT)
+				{
+					MPI_Wait(&PREC_TERM, MPI_STATUS_IGNORE);
+					term_iteration = 0;
+					r_LAST_ITERATION = 1;
+				}	
 			}
-			if (LAST_ITERATION)
+			else if (LAST_RANK && maxResiduum < options->term_precision)
 			{
-				term_iteration = 0;
+				MPI_Issend(&s_LAST_ITERATION, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &PREC_TERM);
+				MPI_Wait(&PREC_TERM, MPI_STATUS_IGNORE);
 			}
-		
 		}
 		else if (options->termination == TERM_ITER)
 		{
 			term_iteration--;
 		}
 	}
-
-	// if(send_N_to_0 || recv_N_to_0){
-	// 	MPI_Wait(&request, MPI_STATUS_IGNORE);
-	// }
-
-	/* Rang 0 übernimmt alle Display-Aufgaben */
-	if (rank == world_size - 1)
+	
+	/* Sende Statistik an FIRST_RANK */
+	if (LAST_RANK)
 	{
 		MPI_Ssend(&results->stat_iteration, 1, MPI_INT, 0, 3, MPI_COMM_WORLD);
 		MPI_Ssend(&results->stat_precision, 1, MPI_DOUBLE, 0, 4, MPI_COMM_WORLD);
 	}
-	else if (!rank)
+	else if (FIRST_RANK)
 	{
 		MPI_Recv(&results->stat_iteration, 1, MPI_INT, world_size - 1, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		MPI_Recv(&results->stat_precision, 1, MPI_DOUBLE, world_size - 1, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	}
-	results->m = 0;
+
 }
+
 /**
  * calculateMPI_Jacobi
  * Berechnet die Matrix mit dem Jacobi-Verfahren.
