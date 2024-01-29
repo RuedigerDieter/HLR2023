@@ -523,7 +523,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 		 for (i = 1; i < lpp - 1; i++)
 		 {
-			printf("[%d] Berechne Zeile %d\n", (int) rank, (int) i);
 			double fpisin_i = 0.0;
 
 			if (options->inf_func == FUNC_FPISIN)
@@ -540,14 +539,9 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 					printf("[%d] Empfange Haloline von oben\n", (int) rank);
 					/* Empfange Haloline und MaxRes von oben */
 					MPI_Recv(r_buf_halo_prec, N + 1 + 2, MPI_DOUBLE, above, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-					
-					Matrix[0] = r_buf_halo_prec;
-
-					
 					r_LAST_ITERATION = r_buf_halo_prec[N + 1];
 					maxResiduum = r_buf_halo_prec[N + 2];
-					// memcpy(Matrix[0], r_buf_halo_prec, (N + 1) * sizeof(double));
-
+					memcpy(Matrix[0], r_buf_halo_prec, (N + 1) * sizeof(double));
 					localMaxResiduum = maxResiduum;
 				}	
 			}
@@ -588,7 +582,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 					SENT_A = 0;
 				}
 			}
-			else if (i == lpp - 2)
+			if (i == lpp - 2)
 			{
 				if (LAST_RANK)
 				{
@@ -640,6 +634,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			term_iteration--;
 		}
 	}
+	printf("[%d] Berechnung beendet\n", (int) rank);
 	
 	/* Sende Statistik an FIRST_RANK */
 	if (LAST_RANK)
@@ -1072,7 +1067,6 @@ main (int argc, char** argv)
 	}
 	if (world_size != 1)
 	{
-		 // DisplayMatrix (struct calculation_arguments* arguments, struct calculation_results* results, struct options* options, int rank, int size, int from, int to)
 		int from = proc_args.start_line;
 		int to = proc_args.start_line + proc_args.lpp - 3;
 
