@@ -626,7 +626,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			}
 			else if (rank == world_size -1)
 			{
-				printf("[%d] %f > %f\n", (int) rank, (double) maxResiduum, (double) options->term_precision);
+				printf("[%d] %e > %e\n", (int) rank, (double) maxResiduum, (double) options->term_precision);
 			}
 			if (LAST_ITERATION)
 			{
