@@ -621,7 +621,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 					MPI_Wait(&PREC_TERM, MPI_STATUS_IGNORE);
 					term_iteration = 0;
 					r_LAST_ITERATION = 1;
-				}	
+				}
 			}
 			else if (LAST_RANK && maxResiduum < options->term_precision)
 			{

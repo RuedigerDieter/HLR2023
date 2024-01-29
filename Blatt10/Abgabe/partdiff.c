@@ -541,7 +541,6 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 			/* Wenn 0, prüfe ob LAST_ITERATION gesendet wurde.*/
 			if (rank == 0)
 			{
-				printf("[%d] Pruefe, ob PREC_REACHED von %d\n", (int) rank, (int) world_size - 1);
                 int flag = 0;
                 MPI_Test(&request, &flag, MPI_STATUS_IGNORE);
                 if (flag)
@@ -563,10 +562,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 
 			if (options->inf_func == FUNC_FPISIN)
 			{
-				/* Per Debugging sieht man, dass die aktuelle Berechnung mit der Sequentiellen übereinstimmt.*/
 				fpisin_i = fpisin * sin(pih * (double) (i + proc_args->start_line - 1 ));
-				// if (term_iteration == 1)
-				// 	printf("[%d] Berechne FPISIN für %d\n", (int) rank, (int) (i + proc_args->start_line - 1));
 			}
 
 			/* over all columns */
@@ -627,6 +623,10 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 				N_to_0_PREC_REACHED = 1;
 				MPI_Issend(&N_to_0_PREC_REACHED, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
 				printf("[%d] Sende PREC_REACHED an %d, %d\n", (int) rank, (int) 0, (int) term_iteration);
+			}
+			else if (rank == world_size -1)
+			{
+				printf("[%d] %f > %f\n", (int) rank, (double) maxResiduum, (double) options->term_precision);
 			}
 			if (LAST_ITERATION)
 			{
