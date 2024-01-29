@@ -529,6 +529,7 @@ static void calculateMPI_GS (struct calculation_arguments const* arguments, stru
 		/* MaxResiduum-Kette*/
 		if(!rank){
 			maxResiduum = 0;
+			localMaxResiduum = 0;
 		}else{
 			localMaxResiduum = maxResiduum;
 		}		
